@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "bucket-dir"
+version = "0.1.0"
+description = "Generate directory listings for S3 statically hosted content."
+authors = ["Dave Randall <19395688+daveygit2050@users.noreply.github.com>"]
+license = "Apache 2.0"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+boto3 = "^1.17.11"
+humanize = "^3.2.0"
+Jinja2 = "^2.11.3"
+rich = "^9.11.0"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+bucket-dir = 'bucket_dir:run_cli'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+

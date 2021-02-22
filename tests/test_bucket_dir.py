@@ -81,6 +81,13 @@ def simulate_s3(folders):
         <Size>26921</Size>
         <StorageClass>STANDARD</StorageClass>
     </Contents>
+        <Contents>
+        <Key>deep-folder/i/ii/iii/deep-object</Key>
+        <LastModified>2021-02-22T10:26:36.000Z</LastModified>
+        <ETag>&quot;ccdab8fb019e23387203c06c157d302f-2&quot;</ETag>
+        <Size>16524288</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
 </ListBucketResult>""",
     )
     for folder in folders:
@@ -105,12 +112,17 @@ def test_generate_bucket_dir(monkeypatch):
     simulate_s3(
         folders=[
             "/",
+            "/deep-folder/",
+            "/deep-folder/i/",
+            "/deep-folder/i/ii/",
+            "/deep-folder/i/ii/iii/",
             "/regular-folder/",
         ]
     )
     bucket_dir.run_cli()
     assert index_created_correctly(
         items=[
+            {"name": "deep-folder/", "last_modified": "-", "size": "-"},
             {"name": "regular-folder/", "last_modified": "-", "size": "-"},
             {"name": "root-one", "last_modified": "22-Feb-2021 10:23", "size": "30.1 kB"},
             {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10.8 kB"},
@@ -125,16 +137,25 @@ def test_generate_bucket_dir(monkeypatch):
         ],
         page_name="foo-bucket/regular-folder/",
     )
+    assert index_created_correctly(
+        items=[{"name": "i/", "last_modified": "-", "size": "-"}],
+        page_name="foo-bucket/deep-folder/",
+    )
+    assert index_created_correctly(
+        items=[{"name": "ii/", "last_modified": "-", "size": "-"}],
+        page_name="foo-bucket/deep-folder/i/",
+    )
+    assert index_created_correctly(
+        items=[{"name": "iii/", "last_modified": "-", "size": "-"}],
+        page_name="foo-bucket/deep-folder/i/ii/",
+    )
+    assert index_created_correctly(
+        items=[{"name": "deep-object", "last_modified": "22-Feb-2021 10:26", "size": "16.5 MB"}],
+        page_name="foo-bucket/deep-folder/i/ii/iii/",
+    )
 
 
 # TODO: Test against common structures
-# <Contents>
-#     <Key>bravo/i/ii/iii/deep-object</Key>
-#     <LastModified>2021-02-22T10:26:36.000Z</LastModified>
-#     <ETag>&quot;ccdab8fb019e23387203c06c157d302f-2&quot;</ETag>
-#     <Size>16524288</Size>
-#     <StorageClass>STANDARD</StorageClass>
-# </Contents>
 # <Contents>
 #     <Key>empty-folder/</Key>
 #     <LastModified>2021-02-22T10:23:25.000Z</LastModified>

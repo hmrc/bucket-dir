@@ -97,7 +97,7 @@ class BucketDirGenerator:
             matching_subfolders = [
                 subfolder
                 for subfolder in folders
-                if re.match(f"^[a-z0-9A-Z!\-_.*'()]+$", subfolder)
+                if re.match(f"^[a-z0-9A-Z!\-_.*'()\s]+$", subfolder)
             ]
         else:
             matching_subfolders = [

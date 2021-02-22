@@ -95,6 +95,13 @@ def simulate_s3(folders):
         <Size>0</Size>
         <StorageClass>STANDARD</StorageClass>
     </Contents>
+    <Contents>
+        <Key>folder+with+spaces/an+object+with+spaces</Key>
+        <LastModified>2021-02-22T10:24:37.000Z</LastModified>
+        <ETag>&quot;11490e1fc1376b0c209d05cf1190843f-4&quot;</ETag>
+        <Size>32993280</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
 </ListBucketResult>""",
     )
     for folder in folders:
@@ -124,6 +131,7 @@ def test_generate_bucket_dir(monkeypatch):
             "/deep-folder/i/ii/",
             "/deep-folder/i/ii/iii/",
             "/empty-folder/",
+            "/folder%20with%20spaces/",
             "/regular-folder/",
         ]
     )
@@ -132,6 +140,7 @@ def test_generate_bucket_dir(monkeypatch):
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},
             {"name": "empty-folder/", "last_modified": "-", "size": "-"},
+            {"name": "folder with spaces/", "last_modified": "-", "size": "-"},
             {"name": "regular-folder/", "last_modified": "-", "size": "-"},
             {"name": "root-one", "last_modified": "22-Feb-2021 10:23", "size": "30.1 kB"},
             {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10.8 kB"},
@@ -166,16 +175,17 @@ def test_generate_bucket_dir(monkeypatch):
         items=[],
         page_name="foo-bucket/empty-folder/",
     )
+    assert index_created_correctly(
+        items=[
+            {
+                "name": "an object with spaces",
+                "last_modified": "22-Feb-2021 10:24",
+                "size": "33.0 MB",
+            },
+        ],
+        page_name="foo-bucket/folder with spaces/",
+    )
 
-
-# TODO: Test against common structures
-# <Contents>
-#     <Key>folder+with+spaces/an+object+with+spaces</Key>
-#     <LastModified>2021-02-22T10:24:37.000Z</LastModified>
-#     <ETag>&quot;11490e1fc1376b0c209d05cf1190843f-4&quot;</ETag>
-#     <Size>32993280</Size>
-#     <StorageClass>STANDARD</StorageClass>
-# </Contents>
 
 # TODO: Test very advanced folder name
 # See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html#object-key-guidelines

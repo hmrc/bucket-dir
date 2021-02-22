@@ -17,8 +17,7 @@ class BucketDirGenerator:
     def __init__(self):
         self.console = Console()
         self.env = Environment(
-            # TODO: Make this non-relative path based
-            loader=FileSystemLoader("bucket_dir/templates"),
+            loader=PackageLoader("bucket_dir", "templates"),
             autoescape=select_autoescape(["html"]),
             trim_blocks=True,
             lstrip_blocks=True,

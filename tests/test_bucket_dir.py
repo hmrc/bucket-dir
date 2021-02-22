@@ -18,7 +18,6 @@ def index_created_correctly(items):
         for regular_expression in regular_expressions:
             if re.search(regular_expression, captured_request.body.decode()):
                 regular_expressions_checklist[regular_expression] = True
-        breakpoint()
         if all(regular_expressions_checklist.values()):
             return True
     return False

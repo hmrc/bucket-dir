@@ -1,4 +1,4 @@
-
+# HMRC Default
 logs
 project/project
 project/target
@@ -22,4 +22,6 @@ npm-debug.log
 yarn-debug.log
 yarn-error.log
 
-    
+# Repo specific
+__pycache__
+.coverage

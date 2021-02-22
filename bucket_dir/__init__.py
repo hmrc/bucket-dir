@@ -85,13 +85,14 @@ class BucketDirGenerator:
                 longest_name_length = len(name)
             if len(modified) > longest_modified_length:
                 longest_modified_length = len(modified)
-            index_items.append(
-                {
-                    "name": name,
-                    "modified": modified,
-                    "size": humanize.naturalsize(matching_content["Size"]),
-                }
-            )
+            if matching_content["Size"]:
+                index_items.append(
+                    {
+                        "name": name,
+                        "modified": modified,
+                        "size": humanize.naturalsize(matching_content["Size"]),
+                    }
+                )
         if folder == "":
             matching_subfolders = [
                 subfolder

@@ -88,6 +88,13 @@ def simulate_s3(folders):
         <Size>16524288</Size>
         <StorageClass>STANDARD</StorageClass>
     </Contents>
+    <Contents>
+        <Key>empty-folder/</Key>
+        <LastModified>2021-02-22T10:23:25.000Z</LastModified>
+        <ETag>&quot;d41d8cd98f00b204e9800998ecf8427e&quot;</ETag>
+        <Size>0</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
 </ListBucketResult>""",
     )
     for folder in folders:
@@ -116,6 +123,7 @@ def test_generate_bucket_dir(monkeypatch):
             "/deep-folder/i/",
             "/deep-folder/i/ii/",
             "/deep-folder/i/ii/iii/",
+            "/empty-folder/",
             "/regular-folder/",
         ]
     )
@@ -123,6 +131,7 @@ def test_generate_bucket_dir(monkeypatch):
     assert index_created_correctly(
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},
+            {"name": "empty-folder/", "last_modified": "-", "size": "-"},
             {"name": "regular-folder/", "last_modified": "-", "size": "-"},
             {"name": "root-one", "last_modified": "22-Feb-2021 10:23", "size": "30.1 kB"},
             {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10.8 kB"},
@@ -153,16 +162,13 @@ def test_generate_bucket_dir(monkeypatch):
         items=[{"name": "deep-object", "last_modified": "22-Feb-2021 10:26", "size": "16.5 MB"}],
         page_name="foo-bucket/deep-folder/i/ii/iii/",
     )
+    assert index_created_correctly(
+        items=[],
+        page_name="foo-bucket/empty-folder/",
+    )
 
 
 # TODO: Test against common structures
-# <Contents>
-#     <Key>empty-folder/</Key>
-#     <LastModified>2021-02-22T10:23:25.000Z</LastModified>
-#     <ETag>&quot;d41d8cd98f00b204e9800998ecf8427e&quot;</ETag>
-#     <Size>0</Size>
-#     <StorageClass>STANDARD</StorageClass>
-# </Contents>
 # <Contents>
 #     <Key>folder+with+spaces/an+object+with+spaces</Key>
 #     <LastModified>2021-02-22T10:24:37.000Z</LastModified>

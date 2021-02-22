@@ -159,7 +159,3 @@ def run_cli():
     argument_parser.add_argument("bucket", help="The bucket to write indexes for.")
     args = argument_parser.parse_args()
     main(bucket=args.bucket)
-
-
-if __name__ == "__main__":
-    run_cli()

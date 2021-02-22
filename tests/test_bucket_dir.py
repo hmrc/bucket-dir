@@ -1,8 +1,11 @@
 import httpretty
 import pytest
 import re
+import sys
 
 import bucket_dir
+
+from unittest import mock
 
 
 def index_created_correctly(items, page_name, root_index=False):
@@ -95,6 +98,7 @@ def put_object_request_callback(request, uri, response_headers):
     return [status, {}, "".encode()]
 
 
+@mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
 def test_generate_bucket_dir(monkeypatch):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "foo-aws-access-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "foo-aws-secret-access-key")
@@ -104,7 +108,7 @@ def test_generate_bucket_dir(monkeypatch):
             "/regular-folder/",
         ]
     )
-    bucket_dir.main(bucket="foo-bucket")
+    bucket_dir.run_cli()
     assert index_created_correctly(
         items=[
             {"name": "regular-folder/", "last_modified": "-", "size": "-"},

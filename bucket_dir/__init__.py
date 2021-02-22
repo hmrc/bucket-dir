@@ -24,11 +24,11 @@ class BucketDirGenerator:
         )
         self.s3_client = boto3.client("s3")
 
-    def generate(self, bucket):
+    def generate(self, bucket, site_name):
         contents = self.get_bucket_contents(bucket)
         folders = self.get_bucket_folders(contents)
         for folder in track(folders, description="Processing index documents:"):
-            index_document = self.render_index_document(folder, folders, contents)
+            index_document = self.render_index_document(folder, folders, contents, site_name)
             self.upload_index_document_to_s3(bucket, folder, index_document)
 
     def get_bucket_contents(self, bucket):
@@ -48,7 +48,7 @@ class BucketDirGenerator:
         self.console.log(f"Folders in bucket: {folders}")
         return list(folders)
 
-    def render_index_document(self, folder, folders, contents):
+    def render_index_document(self, folder, folders, contents, site_name):
         # TODO: There be much sillyness here
         template = self.env.get_template("index.html.j2")
         index_items = []
@@ -92,11 +92,18 @@ class BucketDirGenerator:
                     "size": humanize.naturalsize(matching_content["Size"]),
                 }
             )
-        matching_subfolders = [
-            subfolder
-            for subfolder in folders
-            if re.match(f"^{folder}\/[a-z0-9A-Z!\-_.*'()]+\/?$", subfolder)
-        ]
+        if folder == "":
+            matching_subfolders = [
+                subfolder
+                for subfolder in folders
+                if re.match(f"^[a-z0-9A-Z!\-_.*'()]+$", subfolder)
+            ]
+        else:
+            matching_subfolders = [
+                subfolder
+                for subfolder in folders
+                if re.match(f"^{folder}\/[a-z0-9A-Z!\-_.*'()]+\/?$", subfolder)
+            ]
         for matching_subfolder in matching_subfolders:
             name = f"{matching_subfolder.split('/')[-1]}/"
             if len(name) > longest_name_length:
@@ -116,8 +123,11 @@ class BucketDirGenerator:
                 longest_modified_length + column_padding
             )
         table_headers = f"{'Name'.ljust(longest_name_length + column_padding)}{'Last modified'.ljust(longest_modified_length + column_padding)}Size"
+        page_name = f"{site_name}/{folder}"
+        if not page_name.endswith("/"):
+            page_name = f"{page_name}/"
         return template.render(
-            full_path=f"{folder}/",
+            page_name=page_name,
             table_headers=table_headers,
             index_items=index_items,
             not_root=not_root,
@@ -139,7 +149,7 @@ class BucketDirGenerator:
 
 def main(bucket):
     bucket_dir_generator = BucketDirGenerator()
-    bucket_dir_generator.generate(bucket)
+    bucket_dir_generator.generate(bucket=bucket, site_name=bucket)
 
 
 def run_cli():

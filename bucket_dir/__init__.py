@@ -154,6 +154,7 @@ def main(bucket):
 
 @click.command()
 @click.argument("bucket")
+@click.version_option()
 def run_cli(bucket):
     """Generate directory listings for an S3 BUCKET.
 

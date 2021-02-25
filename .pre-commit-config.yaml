@@ -1,0 +1,33 @@
+repos:
+-   repo: https://github.com/python/black
+    rev: 20.8b1
+    hooks:
+    - id: black
+      language_version: python3
+      args: [--config=./pyproject.toml]
+-   repo: https://github.com/asottile/reorder_python_imports
+    rev: v2.4.0
+    hooks:
+    - id: reorder-python-imports
+      args: [--application-directories=.:src]
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+    - id: trailing-whitespace
+    - id: debug-statements
+    - id: detect-aws-credentials
+      args: [--allow-missing-credentials]
+    - id: detect-private-key
+    - id: fix-encoding-pragma
+    - id: check-merge-conflict
+-   repo: https://github.com/hmrc/security-git-hooks
+    rev: release/1.5.0
+    hooks:
+    -   id: secrets_filecontent
+        name: Checking staged files for sensitive content
+        exclude: ".tar$|.gz$|.jar$|.7z$|.rar$|.bz2$|.zip$|.gzip$|.war$|.ear$|.xlsx$|.xls$|
+                |.docx$|.doc$|.pptx$|.pdf$|.jpg$|.png$|.jpeg$|.tif$|.tiff$|.gif$|.bmp$|.webp$|.svg$|.ico$|.psd$|.exe$|.dll$|.dmg$|.de$|.rpm$|root_ca.pem$"
+    -   id: secrets_filename
+        name: Checking staged files for sensitive file types
+        exclude: ".tar$|.gz$|.jar$|.7z$|.rar$|.bz2$|.zip$|.gzip$|.war$|.ear$|.xlsx$|.xls$|
+                |.docx$|.doc$|.pptx$|.pdf$|.jpg$|.png$|.jpeg$|.tif$|.tiff$|.gif$|.bmp$|.webp$|.svg$|.ico$|.psd$|.exe$|.dll$|.dmg$|.de$|.rpm$|"

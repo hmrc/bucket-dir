@@ -6,10 +6,15 @@ black:
 build: test
 	poetry build
 
-.PHONY: install
-install:
+.PHONY: init
+init:
+	pip install --upgrade poetry
 	poetry install
 
+.PHONY: publish
+publish: build
+	@poetry publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD}
+
 .PHONY: test
-test: install black
+test: init black
 	poetry run pytest tests/

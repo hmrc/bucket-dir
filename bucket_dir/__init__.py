@@ -1,14 +1,13 @@
-import argparse
 import json
 import re
 
 import boto3
+import click
 import humanize
 
-from jinja2 import Environment, FileSystemLoader, PackageLoader, select_autoescape
+from jinja2 import Environment, PackageLoader, select_autoescape
 from rich.console import Console
 from rich.progress import track
-from rich.table import Table
 
 # TODO: Support more than 1000 objects in bucket
 
@@ -153,10 +152,10 @@ def main(bucket):
     bucket_dir_generator.generate(bucket=bucket, site_name=bucket)
 
 
-def run_cli():
-    argument_parser = argparse.ArgumentParser(
-        description="Generate directory listings for S3 statically hosted content."
-    )
-    argument_parser.add_argument("bucket", help="The bucket to write indexes for.")
-    args = argument_parser.parse_args()
-    main(bucket=args.bucket)
+@click.command()
+@click.argument("bucket")
+def run_cli(bucket):
+    """Generate directory listings for an S3 BUCKET.
+
+    BUCKET is the name of the bucket to be indexed."""
+    main(bucket=bucket)

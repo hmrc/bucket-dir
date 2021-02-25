@@ -135,7 +135,8 @@ def test_generate_bucket_dir(monkeypatch):
             "/regular-folder/",
         ]
     )
-    bucket_dir.run_cli()
+    with pytest.raises(SystemExit):
+        bucket_dir.run_cli()
     assert index_created_correctly(
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},

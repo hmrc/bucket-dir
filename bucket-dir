@@ -1,1 +1,0 @@
-poetry run python -c 'import bucket_dir; bucket_dir.run_cli()' $1

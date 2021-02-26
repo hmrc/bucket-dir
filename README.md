@@ -40,6 +40,8 @@ Start with `make init`. This will install prerequisties and set up a poetry mana
 
 Unit testing can be performed with `make test`. If you want to run pytest with other options, use `poetry run pytest ...`.
 
+You can execute the source code directly with `poetry run bucket-dir`.
+
 Finally, you can build with `make build`. This will update dependencies, run security checks and analysis and finally package the code into a wheel and archive.
 
 Publishing can be performed with `make publish`, but this is only intended to run in CI on commit to the main branch. If running locally, you need to have PyPI credentials set as env vars.
@@ -47,10 +49,6 @@ Publishing can be performed with `make publish`, but this is only intended to ru
 For other rules, see the [Makefile](Makefile).
 
 If you are a collaborator, feel free to make changes directly to the main branch. Otherwise, please raise a PR. Don't forget to bump the version in [pyproject.toml](pyproject.toml).
-
-### Using the local bucket-dir script
-
-You can use the provided `bucket-dir` script from the root of the repo to run the code without having to build and install it. Keep in mind that you'll need to provide a path and run it within the virtual environment (e.g. `poetry run ./bucket-dir --help`).
 
 ## License
 

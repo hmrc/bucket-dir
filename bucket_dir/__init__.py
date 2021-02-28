@@ -1,11 +1,15 @@
+# -*- coding: utf-8 -*-
 import json
 import re
+import sys
 
 import boto3
+import botocore
 import click
 import humanize
-
-from jinja2 import Environment, PackageLoader, select_autoescape
+from jinja2 import Environment
+from jinja2 import PackageLoader
+from jinja2 import select_autoescape
 from rich.console import Console
 from rich.progress import track
 
@@ -13,8 +17,8 @@ from rich.progress import track
 
 
 class BucketDirGenerator:
-    def __init__(self):
-        self.console = Console()
+    def __init__(self, console):
+        self.console = console
         self.env = Environment(
             loader=PackageLoader("bucket_dir", "templates"),
             autoescape=select_autoescape(["html"]),
@@ -147,11 +151,6 @@ class BucketDirGenerator:
         )
 
 
-def main(bucket):
-    bucket_dir_generator = BucketDirGenerator()
-    bucket_dir_generator.generate(bucket=bucket, site_name=bucket)
-
-
 @click.command()
 @click.argument("bucket")
 @click.version_option()
@@ -159,4 +158,12 @@ def run_cli(bucket):
     """Generate directory listings for an S3 BUCKET.
 
     BUCKET is the name of the bucket to be indexed."""
-    main(bucket=bucket)
+    console = Console()
+    bucket_dir_generator = BucketDirGenerator(console=console)
+    try:
+        bucket_dir_generator.generate(bucket=bucket, site_name=bucket)
+    except botocore.exceptions.NoCredentialsError:
+        console.log(
+            "Could not discover any AWS credentials. Please supply appropriate credentials."
+        )
+        sys.exit(1)

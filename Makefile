@@ -15,7 +15,6 @@ init:
 	pip install --upgrade poetry
 	poetry install
 	poetry run pre-commit install
-	poetry run pre-commit autoupdate
 
 .PHONY: publish
 publish: build

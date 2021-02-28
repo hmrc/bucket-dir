@@ -1,11 +1,12 @@
-import httpretty
-import pytest
+# -*- coding: utf-8 -*-
 import re
 import sys
+from unittest import mock
+
+import httpretty
+import pytest
 
 import bucket_dir
-
-from unittest import mock
 
 
 def index_created_correctly(items, page_name, root_index=False):
@@ -120,6 +121,13 @@ def put_object_request_callback(request, uri, response_headers):
 
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
+def test_generate_bucket_dir_no_creds():
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 1
+
+
+@mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
 def test_generate_bucket_dir(monkeypatch):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "foo-aws-access-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "foo-aws-secret-access-key")
@@ -135,8 +143,9 @@ def test_generate_bucket_dir(monkeypatch):
             "/regular-folder/",
         ]
     )
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
+    assert system_exit.value.code == 0
     assert index_created_correctly(
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},
@@ -186,6 +195,7 @@ def test_generate_bucket_dir(monkeypatch):
         ],
         page_name="foo-bucket/folder with spaces/",
     )
+    httpretty.disable()
 
 
 # TODO: Test very advanced folder name

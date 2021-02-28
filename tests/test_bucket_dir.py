@@ -122,9 +122,21 @@ def put_object_request_callback(request, uri, response_headers):
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
 def test_generate_bucket_dir_no_creds():
+    httpretty.enable(allow_net_connect=False)
+    httpretty.register_uri(
+        httpretty.PUT,
+        "http://169.254.169.254/latest/api/token",
+        status=404,
+    )
+    httpretty.register_uri(
+        httpretty.GET,
+        "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+        status=404,
+    )
     with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
     assert system_exit.value.code == 1
+    httpretty.disable()
 
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])

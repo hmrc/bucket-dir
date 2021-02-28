@@ -7,7 +7,7 @@ black:
 	poetry run black . --config=./pyproject.toml
 
 .PHONY: build
-build: update test safety bandit
+build: test safety bandit
 	poetry build
 
 .PHONY: init
@@ -29,5 +29,5 @@ test: init black
 	poetry run pytest tests/
 
 .PHONY: update
-update: init black
+update: init
 	poetry update

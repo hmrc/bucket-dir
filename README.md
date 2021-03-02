@@ -1,5 +1,6 @@
 # bucket-dir
 
+<a href="https://github.com/hmrc"><img alt="PyPI" src="https://img.shields.io/badge/HMRC-Digital-FFA500?style=flat&labelColor=000000&logo=gov.uk"></a>
 <a href="https://pypi.org/project/bucket-dir/"><img alt="PyPI" src="https://img.shields.io/pypi/v/bucket-dir"></a>
 <img alt="PyPI" src="https://img.shields.io/pypi/pyversions/bucket-dir">
 <a href="https://github.com/hmrc/bucket-dir/blob/master/LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/github/license/hmrc/bucket-dir"></a>

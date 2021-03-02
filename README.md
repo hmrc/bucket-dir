@@ -11,8 +11,6 @@
 
 It was built in order to host Maven and Ivy repositories in S3 and serve them via CloudFront, but it could meet other needs too.
 
-> DISCLAIMER: This utility is the product of a time boxed spike. It should not be considered production ready. Use at your own risk.
-
 ## Installation
 
 ```

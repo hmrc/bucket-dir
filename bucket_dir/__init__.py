@@ -5,7 +5,7 @@ import botocore
 import click
 from rich.console import Console
 
-from .bucket_dir_generator import BucketDirGenerator
+from .generator import BucketDirGenerator
 
 
 @click.command()
@@ -16,7 +16,7 @@ def run_cli(bucket):
 
     BUCKET is the name of the bucket to be indexed."""
     console = Console()
-    bucket_dir_generator = BucketDirGenerator(console=console)
+    bucket_dir_generator = BucketDirGenerator()
     try:
         bucket_dir_generator.generate(bucket=bucket, site_name=bucket)
     except botocore.exceptions.NoCredentialsError:

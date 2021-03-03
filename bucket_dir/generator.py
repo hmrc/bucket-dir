@@ -3,6 +3,7 @@ import boto3
 from jinja2 import Environment
 from jinja2 import PackageLoader
 from jinja2 import select_autoescape
+from rich.console import Console
 from rich.progress import track
 
 from .index import Index
@@ -47,7 +48,9 @@ class BucketDirGenerator:
     def generate(self, bucket, site_name):
         contents = self.get_bucket_contents(bucket)
         indexes = self.build_indexes(contents)
-        for path, index in track(indexes.items()):
+        for path, index in track(
+            indexes.items(), description="Uploading index to bucket:", transient=True
+        ):
             index_document = index.render(
                 site_name=site_name, template_environment=self.template_environment
             )
@@ -56,7 +59,9 @@ class BucketDirGenerator:
     def get_bucket_contents(self, bucket):
         paginator = self.s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(Bucket=bucket)
-        return [content for page in page_iterator for content in page["Contents"]]
+        console = Console()
+        with console.status("Listing objects in bucket:"):
+            return [content for page in page_iterator for content in page["Contents"]]
 
     def upload_index_document_to_s3(self, bucket, path, index_document):
         s3_client = boto3.client("s3")

@@ -33,6 +33,16 @@ Be sure to provide the command with credentials that allow it to perform ListBuc
 aws-vault exec foo-profile -- bucket-dir foo-bucket
 ```
 
+### Character support
+
+`bucket-dir` supports objects using any of the _Safe characters_ listed in the S3 [object key naming guidelines](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html#object-key-guidelines).
+
+The exception to the above rule is using forward slashes concurrently (e.g. `my-folder//my-object`). This results in a folder called `/`, which breaks hyperlinks.
+
+Use of characters in the _Characters that might require special handling_ list is currently unsupported but is theoretically ok.
+
+Some chharacters in _Characters to avoid_ may also work, but you're on your own.
+
 ## Development
 
 Start with `make init`. This will install prerequisties and set up a poetry managed virtual environment containing all the required runtime and development dependencies.

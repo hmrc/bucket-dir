@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import urllib.parse
+
 import humanize
 
 
@@ -10,6 +12,7 @@ class Item:
 
     def get_justified_attributes(self, name_length, modified_length, column_padding):
         return {
+            "encoded_name": urllib.parse.quote(self.name),
             "name": self.name,
             "name_padding": " ".ljust(name_length - len(self.name) + column_padding),
             "modified": self.modified.ljust(modified_length + column_padding),

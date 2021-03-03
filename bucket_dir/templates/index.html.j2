@@ -9,7 +9,7 @@
 <pre>
 {% if not_root %}<a href="../" class="parent_link">../</a></br>{% endif %}
 {% for index_item in index_items %}
-<a href="{{ index_item.name }}" class="item_link">{{ index_item.name }}</a>{{ index_item.name_padding }}{{ index_item.modified }}{{ index_item.size }}
+<a href="{{ index_item.encoded_name }}" class="item_link">{{ index_item.name }}</a>{{ index_item.name_padding }}{{ index_item.modified }}{{ index_item.size }}
 {% endfor %}
 </pre>
 <hr/>

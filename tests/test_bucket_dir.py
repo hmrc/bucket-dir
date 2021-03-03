@@ -40,14 +40,58 @@ def simulate_s3(folders):
     httpretty.enable(allow_net_connect=False)
     httpretty.register_uri(
         httpretty.GET,
-        "https://foo-bucket.s3.amazonaws.com/?list-type=2&max-keys=1000&encoding-type=url",
+        "https://foo-bucket.s3.amazonaws.com/?list-type=2&max-keys=5&continuation-token=foo-continuation-token&encoding-type=url",
+        match_query_string=True,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
     <Prefix></Prefix>
-    <KeyCount>9</KeyCount>
-    <MaxKeys>1000</MaxKeys>
+    <ContinuationToken>foo-continuation-token</ContinuationToken>
+    <KeyCount>4</KeyCount>
+    <MaxKeys>5</MaxKeys>
     <EncodingType>url</EncodingType>
     <IsTruncated>false</IsTruncated>
+    <Contents>
+        <Key>deep-folder/i/ii/iii/deep-object</Key>
+        <LastModified>2021-02-22T10:26:36.000Z</LastModified>
+        <ETag>&quot;ccdab8fb019e23387203c06c157d302f-2&quot;</ETag>
+        <Size>16524288</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
+    <Contents>
+        <Key>empty-folder/</Key>
+        <LastModified>2021-02-22T10:23:25.000Z</LastModified>
+        <ETag>&quot;d41d8cd98f00b204e9800998ecf8427e&quot;</ETag>
+        <Size>0</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
+    <Contents>
+        <Key>folder+with+spaces/an+object+with+spaces</Key>
+        <LastModified>2021-02-22T10:24:37.000Z</LastModified>
+        <ETag>&quot;11490e1fc1376b0c209d05cf1190843f-4&quot;</ETag>
+        <Size>32993280</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
+    <Contents>
+        <Key>FOLDER_With_UnUsUaL_n4m3/it%5C%27gets*even.%28weirder%29/see%21</Key>
+        <LastModified>2021-02-22T10:26:16.000Z</LastModified>
+        <ETag>&quot;3e4b4b8018db93caccae34dc2fecc8d0&quot;</ETag>
+        <Size>22749</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
+</ListBucketResult>""",
+    )
+    httpretty.register_uri(
+        httpretty.GET,
+        "https://foo-bucket.s3.amazonaws.com/?list-type=2&max-keys=5&encoding-type=url",
+        match_query_string=True,
+        body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+    <Name>foo-bucket</Name>
+    <Prefix></Prefix>
+    <NextContinuationToken>foo-continuation-token</NextContinuationToken>
+    <KeyCount>5</KeyCount>
+    <MaxKeys>5</MaxKeys>
+    <EncodingType>url</EncodingType>
+    <IsTruncated>true</IsTruncated>
     <Contents>
         <Key>root-one</Key>
         <LastModified>2021-02-22T10:23:44.000Z</LastModified>
@@ -81,34 +125,6 @@ def simulate_s3(folders):
         <LastModified>2021-02-22T10:28:13.000Z</LastModified>
         <ETag>&quot;13fa4f75b40ae3fbcb1bc1afb870fc0c&quot;</ETag>
         <Size>26921</Size>
-        <StorageClass>STANDARD</StorageClass>
-    </Contents>
-        <Contents>
-        <Key>deep-folder/i/ii/iii/deep-object</Key>
-        <LastModified>2021-02-22T10:26:36.000Z</LastModified>
-        <ETag>&quot;ccdab8fb019e23387203c06c157d302f-2&quot;</ETag>
-        <Size>16524288</Size>
-        <StorageClass>STANDARD</StorageClass>
-    </Contents>
-    <Contents>
-        <Key>empty-folder/</Key>
-        <LastModified>2021-02-22T10:23:25.000Z</LastModified>
-        <ETag>&quot;d41d8cd98f00b204e9800998ecf8427e&quot;</ETag>
-        <Size>0</Size>
-        <StorageClass>STANDARD</StorageClass>
-    </Contents>
-    <Contents>
-        <Key>folder+with+spaces/an+object+with+spaces</Key>
-        <LastModified>2021-02-22T10:24:37.000Z</LastModified>
-        <ETag>&quot;11490e1fc1376b0c209d05cf1190843f-4&quot;</ETag>
-        <Size>32993280</Size>
-        <StorageClass>STANDARD</StorageClass>
-    </Contents>
-    <Contents>
-        <Key>FOLDER_With_UnUsUaL_n4m3/it%5C%27gets*even.%28weirder%29/see%21</Key>
-        <LastModified>2021-02-22T10:26:16.000Z</LastModified>
-        <ETag>&quot;3e4b4b8018db93caccae34dc2fecc8d0&quot;</ETag>
-        <Size>22749</Size>
         <StorageClass>STANDARD</StorageClass>
     </Contents>
 </ListBucketResult>""",

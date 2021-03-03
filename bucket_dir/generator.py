@@ -54,12 +54,9 @@ class BucketDirGenerator:
             self.upload_index_document_to_s3(bucket, path, index_document)
 
     def get_bucket_contents(self, bucket):
-        # TODO: Support more than 1000 objects in bucket
-        response = self.s3_client.list_objects_v2(
-            Bucket=bucket,
-            MaxKeys=1000,
-        )
-        return response.get("Contents", [])
+        paginator = self.s3_client.get_paginator("list_objects_v2")
+        page_iterator = paginator.paginate(Bucket=bucket)
+        return [content for page in page_iterator for content in page["Contents"]]
 
     def upload_index_document_to_s3(self, bucket, path, index_document):
         s3_client = boto3.client("s3")

@@ -9,6 +9,18 @@ import pytest
 import bucket_dir
 
 
+def body_formatted_correctly(body):
+    item_link_line_lengths = []
+    for line in body.split("\n"):
+        if 'class="item_link"' in line:
+            capture_groups = re.findall(
+                r'item_link">(.+)<\/a>(\s+[A-Za-z0-9-]+\s[\d\s:]{5}\s+)', line
+            )
+            item_link_line_lengths.append(sum([len(cg) for cg in capture_groups[0]]))
+    if len(set(item_link_line_lengths)) <= 1:
+        return True
+
+
 def index_created_correctly(items, page_name, root_index=False):
     regular_expressions = [
         f"<title>Index of {re.escape(page_name)}</title>",
@@ -20,7 +32,7 @@ def index_created_correctly(items, page_name, root_index=False):
     for item in items:
         encoded_name = item.get("encoded_name", item["name"])
         regular_expressions.append(
-            f"<a href=\"{re.escape(encoded_name)}\" class=\"item_link\">{re.escape(item['name'])}<\/a>\s+{item['last_modified']}\s+{item['size']}\\n"
+            f"<a href=\"{re.escape(encoded_name)}\" class=\"item_link\">{re.escape(item['name'])}<\/a>\s+{item['last_modified']}\s+{item['size']}"
         )
     for captured_request in httpretty.latest_requests():
         body = captured_request.body.decode()
@@ -30,9 +42,11 @@ def index_created_correctly(items, page_name, root_index=False):
         for regular_expression in regular_expressions:
             if re.search(regular_expression, body):
                 regular_expressions_checklist[regular_expression] = True
+        print(regular_expressions_checklist)
         if all(regular_expressions_checklist.values()):
             if len(items) == body.count('class="item_link"'):
-                return True
+                if body_formatted_correctly(body):
+                    return True
     return False
 
 

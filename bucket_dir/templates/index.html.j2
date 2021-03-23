@@ -5,7 +5,8 @@
 </head>
 <body>
 <h1>Index of {{ page_name }}</h1>
-<pre>{{ table_headers }}</pre><hr/>
+<pre>{{ table_headers }}</pre>
+<hr/>
 <pre>
 {% if not_root %}<a href="../" class="parent_link">../</a></br>{% endif %}
 {% for index_item in index_items %}

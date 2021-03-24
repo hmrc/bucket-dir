@@ -32,6 +32,38 @@ Be sure to provide the command with credentials that allow it to perform ListBuc
 ```
 aws-vault exec foo-profile -- bucket-dir foo-bucket
 ```
+### IAM requirements
+
+This example demonstrates the most restrictive policy you can apply to the principal (e.g. an IAM user or role) that is going to run `bucket-dir`. Substitute `foo-bucket` for the name of your bucket:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::foo-bucket"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::foo-bucket/*"
+        }
+    ]
+}
+```
+
+* `s3:ListBucket` is required for `bucket-dir` to be able to map out the folder and objects that the bucket contains.
+* `s3:PutObject` is required for `bucket-dir` to be able to upload the generated `index.html` documents.
+
+### Example AWS configuration
+
+For examples on how you can configure an S3 bucket to serve static site content indexed by `bucket-dir`, see:
+
+* [Configuring a public S3 Bucket for use with bucket-dir.](docs/s3_public.md)
+
+Examples of how you can front public and private buckets with CloudFront, and how bucket-dir can be run in a lambda, will be added in due course.
 
 ### Using bucket-dir as a library
 

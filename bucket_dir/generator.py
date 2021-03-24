@@ -60,7 +60,7 @@ class BucketDirGenerator:
         paginator = self.s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(Bucket=bucket)
         console = Console()
-        with console.status("Listing objects in bucket:"):
+        with console.status("Listing objects in bucket."):
             return [content for page in page_iterator for content in page["Contents"]]
 
     def upload_index_document_to_s3(self, bucket, path, index_document):

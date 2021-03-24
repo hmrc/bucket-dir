@@ -33,6 +33,17 @@ Be sure to provide the command with credentials that allow it to perform ListBuc
 aws-vault exec foo-profile -- bucket-dir foo-bucket
 ```
 
+### Using bucket-dir as a library
+
+`bucket-dir` can also be used as a dependency of your own python applications.
+
+```
+from bucket_dir import BucketDirGenerator
+
+bucket_dir_generator = BucketDirGenerator()
+bucket_dir_generator.generate(bucket="foo-bucket", site_name="my static site")
+```
+
 ### Character support
 
 `bucket-dir` supports objects using any of the _Safe characters_ listed in the S3 [object key naming guidelines](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html#object-key-guidelines).

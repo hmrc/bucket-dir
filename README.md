@@ -25,6 +25,16 @@ Run `bucket-dir` with the name of the bucket you wish to index as a parameter:
 bucket-dir foo-bucket
 ```
 
+If you only want to upload indexes for a particular part of the bucket, use `--target-path`. This will generate indexes for folders that lead to the path, and everything under the path:
+
+```
+# These all update the root index, foo-folder's index, and everything underneath foo-folder
+bucket-dir foo-bucket --target-path '/foo-folder/foo-folder/foo-object'
+bucket-dir foo-bucket --target-path '/foo-folder/foo-folder/'
+bucket-dir foo-bucket --target-path 'foo-folder/foo-folder/foo-object'
+bucket-dir foo-bucket --target-path 'foo-folder/foo-folder/'
+```
+
 Use `bucket-dir --help` for all arguments.
 
 Be sure to provide the command with credentials that allow it to perform ListBucket and PutObject calls against the bucket. E.g. with [aws-vault](https://github.com/99designs/aws-vault):

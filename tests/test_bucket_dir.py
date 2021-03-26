@@ -9,6 +9,12 @@ import pytest
 import bucket_dir
 
 
+@pytest.fixture
+def aws_creds(monkeypatch):
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "foo-aws-access-key-id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "foo-aws-secret-access-key")
+
+
 def body_formatted_correctly(body):
     item_link_line_lengths = []
     for line in body.split("\n"):
@@ -50,8 +56,9 @@ def index_created_correctly(items, page_name, root_index=False):
     return False
 
 
-def simulate_s3(folders):
+def simulate_s3(folders_to_be_indexed):
     httpretty.enable(allow_net_connect=False)
+    httpretty.reset()
     httpretty.register_uri(
         httpretty.GET,
         "https://foo-bucket.s3.amazonaws.com/?list-type=2&max-keys=5&continuation-token=foo-continuation-token&encoding-type=url",
@@ -143,7 +150,7 @@ def simulate_s3(folders):
     </Contents>
 </ListBucketResult>""",
     )
-    for folder in folders:
+    for folder in folders_to_be_indexed:
         httpretty.register_uri(
             httpretty.PUT,
             f"https://foo-bucket.s3.amazonaws.com{folder}index.html",
@@ -161,6 +168,7 @@ def put_object_request_callback(request, uri, response_headers):
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
 def test_generate_bucket_dir_no_creds():
     httpretty.enable(allow_net_connect=False)
+    httpretty.reset()
     httpretty.register_uri(
         httpretty.PUT,
         "http://169.254.169.254/latest/api/token",
@@ -174,15 +182,12 @@ def test_generate_bucket_dir_no_creds():
     with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
     assert system_exit.value.code == 1
-    httpretty.disable()
 
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
-def test_generate_bucket_dir(monkeypatch):
-    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "foo-aws-access-key-id")
-    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "foo-aws-secret-access-key")
+def test_generate_bucket_dir(aws_creds):
     simulate_s3(
-        folders=[
+        folders_to_be_indexed=[
             "/",
             "/deep-folder/",
             "/deep-folder/i/",
@@ -265,7 +270,6 @@ def test_generate_bucket_dir(monkeypatch):
         ],
         page_name="foo-bucket/FOLDER_With_UnUsUaL_n4m3/",
     )
-    httpretty.disable()
     assert index_created_correctly(
         items=[
             {
@@ -277,4 +281,58 @@ def test_generate_bucket_dir(monkeypatch):
         ],
         page_name="foo-bucket/FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
     )
-    httpretty.disable()
+
+
+@pytest.mark.parametrize(
+    "target_path",
+    [
+        "/deep-folder/i/ii/",
+        "/deep-folder/i/ii/blah",
+        "deep-folder/i/ii/",
+        "deep-folder/i/ii/blah",
+    ],
+)
+def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
+    mocker.patch.object(sys, "argv", ["bucket-dir", "foo-bucket", "--target-path", target_path])
+    simulate_s3(
+        folders_to_be_indexed=[
+            "/",
+            "/deep-folder/",
+            "/deep-folder/i/",
+            "/deep-folder/i/ii/",
+            "/deep-folder/i/ii/iii/",
+        ]
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 0
+    assert index_created_correctly(
+        items=[
+            {"name": "deep-folder/", "last_modified": "-", "size": "-"},
+            {"name": "empty-folder/", "last_modified": "-", "size": "-"},
+            {
+                "name": "folder with spaces/",
+                "last_modified": "-",
+                "size": "-",
+                "encoded_name": "folder%20with%20spaces/",
+            },
+            {"name": "FOLDER_With_UnUsUaL_n4m3/", "last_modified": "-", "size": "-"},
+            {"name": "regular-folder/", "last_modified": "-", "size": "-"},
+            {"name": "root-one", "last_modified": "22-Feb-2021 10:23", "size": "30.1 kB"},
+            {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10.8 kB"},
+        ],
+        page_name="foo-bucket/",
+        root_index=True,
+    )
+    assert index_created_correctly(
+        items=[{"name": "i/", "last_modified": "-", "size": "-"}],
+        page_name="foo-bucket/deep-folder/",
+    )
+    assert index_created_correctly(
+        items=[{"name": "ii/", "last_modified": "-", "size": "-"}],
+        page_name="foo-bucket/deep-folder/i/",
+    )
+    assert index_created_correctly(
+        items=[{"name": "iii/", "last_modified": "-", "size": "-"}],
+        page_name="foo-bucket/deep-folder/i/ii/",
+    )

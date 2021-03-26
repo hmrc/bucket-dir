@@ -45,11 +45,20 @@ class BucketDirGenerator:
                 )
         return indexes
 
-    def generate(self, bucket, site_name):
+    def generate(self, bucket, site_name, target_path="/"):
         contents = self.get_bucket_contents(bucket)
         indexes = self.build_indexes(contents)
+        if not target_path.startswith("/"):
+            target_path = f"/{target_path}"
+        descending_indexes = {
+            path: index for path, index in indexes.items() if path.startswith(target_path)
+        }
+        ascending_indexes = {
+            path: index for path, index in indexes.items() if target_path.startswith(path)
+        }
+        target_indexes = {**descending_indexes, **ascending_indexes}
         for path, index in track(
-            indexes.items(), description="Uploading index to bucket:", transient=True
+            target_indexes.items(), description="Uploading indexes to bucket:", transient=True
         ):
             index_document = index.render(
                 site_name=site_name, template_environment=self.template_environment

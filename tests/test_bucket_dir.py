@@ -336,3 +336,58 @@ def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
         items=[{"name": "iii/", "last_modified": "-", "size": "-"}],
         page_name="foo-bucket/deep-folder/i/ii/",
     )
+
+
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+        "--exclude-object",
+        "root-one",
+        "--exclude-object",
+        "object-two.bar",
+    ],
+)
+def test_generate_bucket_dir_with_excluded_objects(aws_creds):
+    simulate_s3(
+        folders_to_be_indexed=[
+            "/",
+            "/deep-folder/",
+            "/deep-folder/i/",
+            "/deep-folder/i/ii/",
+            "/deep-folder/i/ii/iii/",
+            "/empty-folder/",
+            "/folder with spaces/",
+            "/regular-folder/",
+            "/FOLDER_With_UnUsUaL_n4m3/",
+            "/FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
+        ]
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 0
+    assert index_created_correctly(
+        items=[
+            {"name": "deep-folder/", "last_modified": "-", "size": "-"},
+            {"name": "empty-folder/", "last_modified": "-", "size": "-"},
+            {
+                "name": "folder with spaces/",
+                "last_modified": "-",
+                "size": "-",
+                "encoded_name": "folder%20with%20spaces/",
+            },
+            {"name": "FOLDER_With_UnUsUaL_n4m3/", "last_modified": "-", "size": "-"},
+            {"name": "regular-folder/", "last_modified": "-", "size": "-"},
+            {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10.8 kB"},
+        ],
+        page_name="foo-bucket/",
+        root_index=True,
+    )
+    assert index_created_correctly(
+        items=[
+            {"name": "object-one.foo", "last_modified": "22-Feb-2021 10:22", "size": "16.5 MB"},
+        ],
+        page_name="foo-bucket/regular-folder/",
+    )

@@ -35,6 +35,12 @@ bucket-dir foo-bucket --target-path 'foo-folder/foo-folder/foo-object'
 bucket-dir foo-bucket --target-path 'foo-folder/foo-folder/'
 ```
 
+If you need to exclude objects with certain names from the index use `--exclude-object`. This will hide any objects that match this name. `index.html` objects are ignored for free:
+
+```
+bucket-dir foo-bucket --exclude-object 'error.html' --exclude-object 'foo-object'
+```
+
 Use `bucket-dir --help` for all arguments.
 
 Be sure to provide the command with credentials that allow it to perform ListBucket and PutObject calls against the bucket. E.g. with [aws-vault](https://github.com/99designs/aws-vault):
@@ -64,7 +70,7 @@ This example demonstrates the most restrictive policy you can apply to the princ
 }
 ```
 
-* `s3:ListBucket` is required for `bucket-dir` to be able to map out the folder and objects that the bucket contains.
+* `s3:ListBucket` is required for `bucket-dir` to be able to map out the folders and objects that the bucket contains.
 * `s3:PutObject` is required for `bucket-dir` to be able to upload the generated `index.html` documents.
 
 ### Example AWS configuration

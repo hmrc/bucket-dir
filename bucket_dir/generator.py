@@ -20,7 +20,7 @@ class BucketDirGenerator:
         )
         self.s3_client = boto3.client("s3")
 
-    def build_indexes(self, contents):
+    def build_indexes(self, contents, exclude_objects):
         indexes = {"/": Index("/")}
         for content in contents:
             key_components = content["Key"].split("/")
@@ -39,15 +39,18 @@ class BucketDirGenerator:
                 full_path = f"/{'/'.join(path_components)}/"
             else:
                 full_path = "/"
-            if item_name not in ["", "index.html"]:
+            if not exclude_objects:
+                exclude_objects = []
+            exclude_objects.extend(["", "index.html"])
+            if item_name not in exclude_objects:
                 indexes[full_path].add_item(
                     Item(name=item_name, modified=content["LastModified"], size=content["Size"])
                 )
         return indexes
 
-    def generate(self, bucket, site_name, target_path="/"):
+    def generate(self, bucket, site_name, exclude_objects=None, target_path="/"):
         contents = self.get_bucket_contents(bucket)
-        indexes = self.build_indexes(contents)
+        indexes = self.build_indexes(contents, exclude_objects)
         if not target_path.startswith("/"):
             target_path = f"/{target_path}"
         descending_indexes = {

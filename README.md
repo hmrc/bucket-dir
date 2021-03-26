@@ -29,10 +29,10 @@ If you only want to upload indexes for a particular part of the bucket, use `--t
 
 ```
 # These all update the root index, foo-folder's index, and everything underneath foo-folder
-bucket-dir foo-bucket --target-path '/foo-folder/foo-folder/foo-object'
-bucket-dir foo-bucket --target-path '/foo-folder/foo-folder/'
-bucket-dir foo-bucket --target-path 'foo-folder/foo-folder/foo-object'
-bucket-dir foo-bucket --target-path 'foo-folder/foo-folder/'
+bucket-dir foo-bucket --target-path '/foo-folder/foo-object'
+bucket-dir foo-bucket --target-path '/foo-folder/'
+bucket-dir foo-bucket --target-path 'foo-folder/foo-object'
+bucket-dir foo-bucket --target-path 'foo-folder/'
 ```
 
 If you need to exclude objects with certain names from the index use `--exclude-object`. This will hide any objects that match this name. `index.html` objects are ignored for free:

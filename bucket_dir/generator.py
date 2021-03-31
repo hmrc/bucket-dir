@@ -84,9 +84,8 @@ class BucketDirGenerator:
         return contents
 
     def upload_index_document_to_s3(self, bucket, path, index_document):
-        s3_client = boto3.client("s3")
         key = f"{path[1:]}index.html"
-        s3_client.put_object(
+        self.s3_client.put_object(
             Body=index_document.encode(),
             Bucket=bucket,
             CacheControl="max-age=0",

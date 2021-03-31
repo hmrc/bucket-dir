@@ -4,7 +4,6 @@ from jinja2 import Environment
 from jinja2 import PackageLoader
 from jinja2 import select_autoescape
 from rich.console import Console
-from rich.progress import track
 
 from .index import Index
 from .item import Item
@@ -12,6 +11,7 @@ from .item import Item
 
 class BucketDirGenerator:
     def __init__(self):
+        self.console = Console()
         self.template_environment = Environment(
             loader=PackageLoader("bucket_dir", "templates"),
             autoescape=select_autoescape(["html"]),
@@ -60,20 +60,24 @@ class BucketDirGenerator:
             path: index for path, index in indexes.items() if target_path.startswith(path)
         }
         target_indexes = {**descending_indexes, **ascending_indexes}
-        for path, index in track(
-            target_indexes.items(), description="Uploading indexes to bucket:", transient=True
-        ):
+        index_count = len(target_indexes)
+        index_progress = 0
+        for path, index in target_indexes.items():
+            index_progress += 1
+            self.console.print(f"Rendering index for {path} ({index_progress}/{index_count}).")
             index_document = index.render(
                 site_name=site_name, template_environment=self.template_environment
             )
+            self.console.print(f"Uploading index for {path} ({index_progress}/{index_count}).")
             self.upload_index_document_to_s3(bucket, path, index_document)
 
     def get_bucket_contents(self, bucket):
         paginator = self.s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(Bucket=bucket)
-        console = Console()
-        with console.status("Listing objects in bucket."):
-            return [content for page in page_iterator for content in page["Contents"]]
+        with self.console.status("Listing objects in bucket."):
+            contents = [content for page in page_iterator for content in page["Contents"]]
+        self.console.print(f"Found {len(contents)} objects in the {bucket} bucket.")
+        return contents
 
     def upload_index_document_to_s3(self, bucket, path, index_document):
         s3_client = boto3.client("s3")

@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
+import logging
+
 import boto3
 from jinja2 import Environment
 from jinja2 import PackageLoader
 from jinja2 import select_autoescape
-from rich.console import Console
 
 from .index import Index
 from .item import Item
 
 
 class BucketDirGenerator:
-    def __init__(self):
-        self.console = Console()
+    def __init__(self, logger=None):
+        self.logger = logger or logging.getLogger("bucket_dir")
         self.template_environment = Environment(
             loader=PackageLoader("bucket_dir", "templates"),
             autoescape=select_autoescape(["html"]),
@@ -50,7 +51,9 @@ class BucketDirGenerator:
 
     def generate(self, bucket, site_name, exclude_objects=None, target_path="/"):
         contents = self.get_bucket_contents(bucket)
+        self.logger.info(f"Building indexes for {bucket}.")
         indexes = self.build_indexes(contents, exclude_objects)
+        self.logger.info(f"Built {len(indexes)} indexes for {bucket}.")
         if not target_path.startswith("/"):
             target_path = f"/{target_path}"
         descending_indexes = {
@@ -64,19 +67,20 @@ class BucketDirGenerator:
         index_progress = 0
         for path, index in target_indexes.items():
             index_progress += 1
-            self.console.print(f"Rendering index for {path} ({index_progress}/{index_count}).")
+            self.logger.info(f"Rendering index for {path} ({index_progress}/{index_count}).")
             index_document = index.render(
                 site_name=site_name, template_environment=self.template_environment
             )
-            self.console.print(f"Uploading index for {path} ({index_progress}/{index_count}).")
+            self.logger.info(f"Uploading index for {path} ({index_progress}/{index_count}).")
             self.upload_index_document_to_s3(bucket, path, index_document)
+        self.logger.info(f"Finished indexing {bucket} bucket.")
 
     def get_bucket_contents(self, bucket):
         paginator = self.s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(Bucket=bucket)
-        with self.console.status("Listing objects in bucket."):
-            contents = [content for page in page_iterator for content in page["Contents"]]
-        self.console.print(f"Found {len(contents)} objects in the {bucket} bucket.")
+        self.logger.info(f"Listing objects in the {bucket} bucket.")
+        contents = [content for page in page_iterator for content in page["Contents"]]
+        self.logger.info(f"Found {len(contents)} objects in the {bucket} bucket.")
         return contents
 
     def upload_index_document_to_s3(self, bucket, path, index_document):

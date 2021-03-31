@@ -1,11 +1,23 @@
 # -*- coding: utf-8 -*-
+import logging
 import sys
 
 import botocore
 import click
-from rich.console import Console
 
 from .generator import BucketDirGenerator
+
+
+def configure_logging(log_level="info") -> None:
+    formatter = logging.Formatter(
+        fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger = logging.getLogger("bucket_dir")
+    logger.setLevel(log_level.upper())
+    logger.addHandler(handler)
+    logger.debug("Logging configured")
 
 
 @click.command()
@@ -25,8 +37,9 @@ def run_cli(bucket, exclude_object, target_path):
     """Generate directory listings for an S3 BUCKET.
 
     BUCKET is the name of the bucket to be indexed."""
-    console = Console()
-    bucket_dir_generator = BucketDirGenerator()
+    configure_logging()
+    logger = logging.getLogger("bucket_dir")
+    bucket_dir_generator = BucketDirGenerator(logger=logger)
     try:
         bucket_dir_generator.generate(
             bucket=bucket,
@@ -35,7 +48,7 @@ def run_cli(bucket, exclude_object, target_path):
             target_path=target_path,
         )
     except botocore.exceptions.NoCredentialsError:
-        console.log(
+        logger.error(
             "Could not discover any AWS credentials. Please supply appropriate credentials."
         )
         sys.exit(1)

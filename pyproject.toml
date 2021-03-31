@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bucket-dir"
-version = "1.6.0"
+version = "1.7.0"
 description = "Generate directory listings for S3 statically hosted content."
 authors = ["Dave Randall <19395688+daveygit2050@users.noreply.github.com>"]
 license = "Apache-2.0"
@@ -12,7 +12,6 @@ python = "^3.7"
 boto3 = "^1.17.11"
 humanize = "^3.2.0"
 Jinja2 = "^2.11.3"
-rich = "^9.11.0"
 click = "^7.1.2"
 
 [tool.poetry.dev-dependencies]

@@ -118,6 +118,18 @@ For other rules, see the [Makefile](Makefile).
 
 If you are a collaborator, feel free to make changes directly to the main branch. Otherwise, please raise a PR. Don't forget to bump the version in [pyproject.toml](pyproject.toml).
 
+### Profiling
+
+To get a performance profile, use:
+
+```
+poetry run pytest --profile-svg tests/test_bucket_dir.py::test_generate_bucket_dir
+```
+
+You must have the `graphviz` library installed.
+
+A `combined.svg` image will be generated in the `prof` directory which you can use to find bottlenecks and potential enhancements.
+
 ## License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

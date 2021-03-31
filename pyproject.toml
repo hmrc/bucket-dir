@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bucket-dir"
-version = "1.8.0"
+version = "1.8.1"
 description = "Generate directory listings for S3 statically hosted content."
 authors = ["Dave Randall <19395688+daveygit2050@users.noreply.github.com>"]
 license = "Apache-2.0"
@@ -23,6 +23,8 @@ safety = "^1.10.3"
 bandit = "^1.7.0"
 pre-commit = "^2.10.1"
 pytest-mock = "^3.5.1"
+pytest-profiling = "^1.7.0"
+gprof2dot = "^2021.2.21"
 
 [tool.poetry.scripts]
 bucket-dir = 'bucket_dir:run_cli'

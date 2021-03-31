@@ -25,3 +25,4 @@ yarn-error.log
 # Repo specific
 __pycache__
 .coverage
+prof/

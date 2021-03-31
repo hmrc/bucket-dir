@@ -48,7 +48,6 @@ def index_created_correctly(items, page_name, root_index=False):
         for regular_expression in regular_expressions:
             if re.search(regular_expression, body):
                 regular_expressions_checklist[regular_expression] = True
-        print(regular_expressions_checklist)
         if all(regular_expressions_checklist.values()):
             if len(items) == body.count('class="item_link"'):
                 if body_formatted_correctly(body):

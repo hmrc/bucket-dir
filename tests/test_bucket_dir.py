@@ -13,6 +13,7 @@ import bucket_dir
 def aws_creds(monkeypatch):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "foo-aws-access-key-id")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "foo-aws-secret-access-key")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "eu-west-1")
 
 
 def body_formatted_correctly(body):
@@ -60,7 +61,7 @@ def simulate_s3(folders_to_be_indexed):
     httpretty.reset()
     httpretty.register_uri(
         httpretty.GET,
-        "https://foo-bucket.s3.amazonaws.com/?list-type=2&max-keys=5&continuation-token=foo-continuation-token&encoding-type=url",
+        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=5&continuation-token=foo-continuation-token&encoding-type=url",
         match_query_string=True,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
@@ -102,7 +103,7 @@ def simulate_s3(folders_to_be_indexed):
     )
     httpretty.register_uri(
         httpretty.GET,
-        "https://foo-bucket.s3.amazonaws.com/?list-type=2&max-keys=5&encoding-type=url",
+        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=5&encoding-type=url",
         match_query_string=True,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
@@ -152,7 +153,7 @@ def simulate_s3(folders_to_be_indexed):
     for folder in folders_to_be_indexed:
         httpretty.register_uri(
             httpretty.PUT,
-            f"https://foo-bucket.s3.amazonaws.com{folder}index.html",
+            f"https://foo-bucket.s3.eu-west-1.amazonaws.com{folder}index.html",
             body=put_object_request_callback,
         )
 

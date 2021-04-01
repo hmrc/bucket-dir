@@ -16,6 +16,10 @@ init:
 	poetry install
 	poetry run pre-commit install
 
+.PHONY: profile
+profile:
+	export BUCKET_DIR_PROFILE_TEST=yes; poetry run pytest --profile-svg --no-cov tests/test_bucket_dir.py::test_generate_bucket_dir_big_bucket
+
 .PHONY: publish
 publish: build
 	@poetry publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD}

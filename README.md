@@ -123,7 +123,7 @@ If you are a collaborator, feel free to make changes directly to the main branch
 To get a performance profile, use:
 
 ```
-poetry run pytest --profile-svg tests/test_bucket_dir.py::test_generate_bucket_dir
+make profile
 ```
 
 You must have the `graphviz` library installed.

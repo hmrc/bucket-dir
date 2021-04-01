@@ -28,12 +28,18 @@ def configure_logging(log_level="info") -> None:
     multiple=True,
 )
 @click.option(
+    "--single-threaded",
+    default=False,
+    help="Do not using multithreading. Will be slower but less intensive.",
+    is_flag=True,
+)
+@click.option(
     "--target-path",
     default="/",
     help="Only generate indexes relating to a certain folder/object. E.g. '/foo-folder/bar-object'. If omitted, the entire bucket will be indexed.",
 )
 @click.version_option()
-def run_cli(bucket, exclude_object, target_path):
+def run_cli(bucket, exclude_object, single_threaded, target_path):
     """Generate directory listings for an S3 BUCKET.
 
     BUCKET is the name of the bucket to be indexed."""
@@ -45,6 +51,7 @@ def run_cli(bucket, exclude_object, target_path):
             bucket=bucket,
             site_name=bucket,
             exclude_objects=list(exclude_object),
+            single_threaded=single_threaded,
             target_path=target_path,
         )
     except botocore.exceptions.NoCredentialsError:

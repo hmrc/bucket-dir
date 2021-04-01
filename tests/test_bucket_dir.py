@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import re
 import sys
 from unittest import mock
@@ -15,12 +16,12 @@ def aws_creds(monkeypatch):
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "foo-aws-secret-access-key")
     monkeypatch.setenv("AWS_DEFAULT_REGION", "eu-west-1")
 
-@pytest.fixture   
+
+@pytest.fixture
 def delete_aws_creds(monkeypatch):
     monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
     monkeypatch.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
 
-    
 
 def body_formatted_correctly(body):
     item_link_line_lengths = []
@@ -47,7 +48,8 @@ def index_created_correctly(items, page_name, root_index=False):
         regular_expressions.append(
             f"<a href=\"{re.escape(encoded_name)}\" class=\"item_link\">{re.escape(item['name'])}<\/a>\s+{item['last_modified']}\s+{item['size']}"
         )
-    for captured_request in httpretty.latest_requests():
+    put_requests = [request for request in httpretty.latest_requests() if request.method == "PUT"]
+    for captured_request in put_requests:
         body = captured_request.body.decode()
         regular_expressions_checklist = {
             regular_expression: False for regular_expression in regular_expressions
@@ -164,6 +166,46 @@ def simulate_s3(folders_to_be_indexed):
         )
 
 
+def simulate_s3_big_bucket():
+    httpretty.enable(allow_net_connect=False)
+    httpretty.reset()
+    contents = ""
+    for folder_number in range(1000):
+        contents += f"""<Contents>
+        <Key>folder-{folder_number}/foo-object</Key>
+        <LastModified>2021-02-22T10:23:44.000Z</LastModified>
+        <ETag>&quot;18f190bd12aa40e3e7199c665e8fcc9c&quot;</ETag>
+        <Size>30087</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>"""
+    body = f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+    <Name>foo-bucket</Name>
+    <Prefix></Prefix>
+    <KeyCount>1000</KeyCount>
+    <MaxKeys>1000</MaxKeys>
+    <EncodingType>url</EncodingType>
+    <IsTruncated>false</IsTruncated>
+    {contents}
+</ListBucketResult>"""
+    httpretty.register_uri(
+        httpretty.GET,
+        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=1000&encoding-type=url",
+        match_query_string=True,
+        body=body,
+    )
+    httpretty.register_uri(
+        httpretty.PUT,
+        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/index.html",
+        body=put_object_request_callback,
+    )
+    for folder_number in range(1000):
+        httpretty.register_uri(
+            httpretty.PUT,
+            f"https://foo-bucket.s3.eu-west-1.amazonaws.com/folder-{folder_number}/index.html",
+            body=put_object_request_callback,
+        )
+
+
 def put_object_request_callback(request, uri, response_headers):
     status = 100
     if len(request.body) > 0:
@@ -190,7 +232,15 @@ def test_generate_bucket_dir_no_creds(delete_aws_creds):
     assert system_exit.value.code == 1
 
 
-@mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+        "--single-threaded",
+    ],
+)
 def test_generate_bucket_dir(aws_creds):
     simulate_s3(
         folders_to_be_indexed=[
@@ -299,7 +349,17 @@ def test_generate_bucket_dir(aws_creds):
     ],
 )
 def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
-    mocker.patch.object(sys, "argv", ["bucket-dir", "foo-bucket", "--target-path", target_path])
+    mocker.patch.object(
+        sys,
+        "argv",
+        [
+            "bucket-dir",
+            "foo-bucket",
+            "--target-path",
+            target_path,
+            "--single-threaded",
+        ],
+    )
     simulate_s3(
         folders_to_be_indexed=[
             "/",
@@ -354,6 +414,7 @@ def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
         "root-one",
         "--exclude-object",
         "object-two.bar",
+        "--single-threaded",
     ],
 )
 def test_generate_bucket_dir_with_excluded_objects(aws_creds):
@@ -397,3 +458,52 @@ def test_generate_bucket_dir_with_excluded_objects(aws_creds):
         ],
         page_name="foo-bucket/regular-folder/",
     )
+
+
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+    ],
+)
+def test_generate_bucket_dir_multithreaded_smoke(aws_creds):
+    """We cannot use httpretty when multithreading, see:
+
+    https://github.com/gabrielfalcao/HTTPretty/issues/186
+    https://github.com/gabrielfalcao/HTTPretty/issues/209
+
+    Most of the testing value is thus performed with --single-threaded.
+
+    This test ensures that mulithreading itself basically works.
+    """
+    simulate_s3(
+        folders_to_be_indexed=[
+            "/",
+            "/deep-folder/",
+            "/deep-folder/i/",
+            "/deep-folder/i/ii/",
+            "/deep-folder/i/ii/iii/",
+            "/empty-folder/",
+            "/folder with spaces/",
+            "/regular-folder/",
+            "/FOLDER_With_UnUsUaL_n4m3/",
+            "/FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
+        ]
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 0
+
+
+@pytest.mark.skipif(
+    not os.getenv("BUCKET_DIR_PROFILE_TEST"),
+    reason="Performance test, run explicitly for benchmarking.",
+)
+@mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
+def test_generate_bucket_dir_big_bucket(aws_creds):
+    simulate_s3_big_bucket()
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 0

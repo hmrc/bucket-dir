@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import concurrent.futures
 import logging
 
 import boto3
@@ -49,7 +50,9 @@ class BucketDirGenerator:
                 )
         return indexes
 
-    def generate(self, bucket, site_name, exclude_objects=None, target_path="/"):
+    def generate(
+        self, bucket, site_name, exclude_objects=None, single_threaded=False, target_path="/"
+    ):
         contents = self.get_bucket_contents(bucket)
         self.logger.info(f"Building indexes for {bucket}.")
         indexes = self.build_indexes(contents, exclude_objects)
@@ -63,16 +66,24 @@ class BucketDirGenerator:
             path: index for path, index in indexes.items() if target_path.startswith(path)
         }
         target_indexes = {**descending_indexes, **ascending_indexes}
-        index_count = len(target_indexes)
-        index_progress = 0
-        for path, index in target_indexes.items():
-            index_progress += 1
-            self.logger.info(f"Rendering index for {path} ({index_progress}/{index_count}).")
-            index_document = index.render(
-                site_name=site_name, template_environment=self.template_environment
-            )
-            self.logger.info(f"Uploading index for {path} ({index_progress}/{index_count}).")
-            self.upload_index_document_to_s3(bucket, path, index_document)
+        if single_threaded:
+            for path, index in target_indexes.items():
+                self.render_and_upload_index_document_to_s3(bucket, site_name, path, index)
+        else:
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                for path, index in target_indexes.items():
+                    futures.append(
+                        executor.submit(
+                            self.render_and_upload_index_document_to_s3,
+                            bucket,
+                            site_name,
+                            path,
+                            index,
+                        )
+                    )
+            for future in futures:
+                future.result()
         self.logger.info(f"Finished indexing {bucket} bucket.")
 
     def get_bucket_contents(self, bucket):
@@ -83,7 +94,12 @@ class BucketDirGenerator:
         self.logger.info(f"Found {len(contents)} objects in the {bucket} bucket.")
         return contents
 
-    def upload_index_document_to_s3(self, bucket, path, index_document):
+    def render_and_upload_index_document_to_s3(self, bucket, site_name, path, index):
+        self.logger.info(f"Rendering index for {path}.")
+        index_document = index.render(
+            site_name=site_name, template_environment=self.template_environment
+        )
+        self.logger.info(f"Uploading index for {path}.")
         key = f"{path[1:]}index.html"
         self.s3_client.put_object(
             Body=index_document.encode(),

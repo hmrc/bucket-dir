@@ -43,7 +43,7 @@ class BucketDirGenerator:
                 full_path = "/"
             if not exclude_objects:
                 exclude_objects = []
-            exclude_objects.extend(["", "index.html"])
+            exclude_objects.extend(["", "favicon.ico", "index.html"])
             if item_name not in exclude_objects:
                 indexes[full_path].add_item(
                     Item(name=item_name, modified=content["LastModified"], size=content["Size"])

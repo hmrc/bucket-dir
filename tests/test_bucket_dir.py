@@ -75,7 +75,7 @@ def simulate_s3(folders_to_be_indexed):
     <Name>foo-bucket</Name>
     <Prefix></Prefix>
     <ContinuationToken>foo-continuation-token</ContinuationToken>
-    <KeyCount>4</KeyCount>
+    <KeyCount>5</KeyCount>
     <MaxKeys>5</MaxKeys>
     <EncodingType>url</EncodingType>
     <IsTruncated>false</IsTruncated>
@@ -105,6 +105,13 @@ def simulate_s3(folders_to_be_indexed):
         <LastModified>2021-02-22T10:26:16.000Z</LastModified>
         <ETag>&quot;3e4b4b8018db93caccae34dc2fecc8d0&quot;</ETag>
         <Size>22749</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
+    <Contents>
+        <Key>favicon.ico</Key>
+        <LastModified>2021-04-07T09:19:44.000Z</LastModified>
+        <ETag>&quot;18f190bd12aa40e3e7199c665e8fcc9c&quot;</ETag>
+        <Size>12345</Size>
         <StorageClass>STANDARD</StorageClass>
     </Contents>
 </ListBucketResult>""",

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import concurrent.futures
+import hashlib
 import logging
 
 import boto3
@@ -22,7 +23,8 @@ class BucketDirGenerator:
         )
         self.s3_client = boto3.client("s3")
 
-    def build_indexes(self, contents, exclude_objects):
+    @staticmethod
+    def build_indexes(contents, exclude_objects):
         indexes = {"/": Index("/")}
         for content in contents:
             key_components = content["Key"].split("/")
@@ -50,12 +52,22 @@ class BucketDirGenerator:
                 )
         return indexes
 
+    @staticmethod
+    def generate_index_hash(content_list):
+        index_hash = {}
+        for content in content_list:
+            if content["Key"].endswith("index.html"):
+                index_hash[content["Key"]] = content["ETag"].replace('"', "")
+        return index_hash
+
     def generate(
         self, bucket, site_name, exclude_objects=None, single_threaded=False, target_path="/"
     ):
         contents = self.get_bucket_contents(bucket)
         self.logger.info(f"Building indexes for {bucket}.")
         indexes = self.build_indexes(contents, exclude_objects)
+        index_hashes = self.generate_index_hash(contents)
+
         self.logger.info(f"Built {len(indexes)} indexes for {bucket}.")
         if not target_path.startswith("/"):
             target_path = f"/{target_path}"
@@ -68,7 +80,9 @@ class BucketDirGenerator:
         target_indexes = {**descending_indexes, **ascending_indexes}
         if single_threaded:
             for path, index in target_indexes.items():
-                self.render_and_upload_index_document_to_s3(bucket, site_name, path, index)
+                self.render_and_upload_index_document_to_s3(
+                    bucket, site_name, path, index, index_hashes
+                )
         else:
             futures = []
             with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -80,6 +94,7 @@ class BucketDirGenerator:
                             site_name,
                             path,
                             index,
+                            index_hashes,
                         )
                     )
             for future in futures:
@@ -94,17 +109,26 @@ class BucketDirGenerator:
         self.logger.info(f"Found {len(contents)} objects in the {bucket} bucket.")
         return contents
 
-    def render_and_upload_index_document_to_s3(self, bucket, site_name, path, index):
-        self.logger.info(f"Rendering index for {path}.")
+    def render_and_upload_index_document_to_s3(self, bucket, site_name, path, index, index_hashes):
+        self.logger.debug(f"Rendering index for {path}.")
         index_document = index.render(
             site_name=site_name, template_environment=self.template_environment
-        )
-        self.logger.info(f"Uploading index for {path}.")
+        ).encode("utf-8")
+
         key = f"{path[1:]}index.html"
-        self.s3_client.put_object(
-            Body=index_document.encode(),
-            Bucket=bucket,
-            CacheControl="max-age=0",
-            ContentType="text/html",
-            Key=key,
+
+        self.logger.debug(
+            f"{key} comparing existing hash: {index_hashes.get(key)} to new hash: {hashlib.md5(index_document).hexdigest()}"
         )
+        if index_hashes.get(key) == hashlib.md5(index_document).hexdigest():
+            self.logger.info(f"Skipping unchanged index for {key}")
+        else:
+            self.logger.info(f"Uploading index for {key}")
+
+            self.s3_client.put_object(
+                Body=index_document,
+                Bucket=bucket,
+                CacheControl="max-age=0",
+                ContentType="text/html",
+                Key=key,
+            )

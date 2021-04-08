@@ -75,10 +75,17 @@ def simulate_s3(folders_to_be_indexed):
     <Name>foo-bucket</Name>
     <Prefix></Prefix>
     <ContinuationToken>foo-continuation-token</ContinuationToken>
-    <KeyCount>5</KeyCount>
-    <MaxKeys>5</MaxKeys>
+    <KeyCount>6</KeyCount>
+    <MaxKeys>6</MaxKeys>
     <EncodingType>url</EncodingType>
     <IsTruncated>false</IsTruncated>
+    <Contents>
+        <Key>deep-folder/i/ii/iii/index.html</Key>
+        <LastModified>2021-02-22T10:28:13.000Z</LastModified>
+        <ETag>&quot;2a191461baaeb6a9f0add33ac9187ea4&quot;</ETag>
+        <Size>26921</Size>
+        <StorageClass>STANDARD</StorageClass>
+    </Contents>
     <Contents>
         <Key>deep-folder/i/ii/iii/deep-object</Key>
         <LastModified>2021-02-22T10:26:36.000Z</LastModified>
@@ -255,7 +262,6 @@ def test_generate_bucket_dir(aws_creds):
             "/deep-folder/",
             "/deep-folder/i/",
             "/deep-folder/i/ii/",
-            "/deep-folder/i/ii/iii/",
             "/empty-folder/",
             "/folder with spaces/",
             "/regular-folder/",
@@ -266,6 +272,13 @@ def test_generate_bucket_dir(aws_creds):
     with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
     assert system_exit.value.code == 0
+
+    # skipped as it has not changed
+    assert not index_created_correctly(
+        items=[{"name": "deep-object", "last_modified": "22-Feb-2021 10:26", "size": "16.5 MB"}],
+        page_name="foo-bucket/deep-folder/i/ii/iii/",
+    )
+
     assert index_created_correctly(
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},
@@ -302,10 +315,6 @@ def test_generate_bucket_dir(aws_creds):
     assert index_created_correctly(
         items=[{"name": "iii/", "last_modified": "-", "size": "-"}],
         page_name="foo-bucket/deep-folder/i/ii/",
-    )
-    assert index_created_correctly(
-        items=[{"name": "deep-object", "last_modified": "22-Feb-2021 10:26", "size": "16.5 MB"}],
-        page_name="foo-bucket/deep-folder/i/ii/iii/",
     )
     assert index_created_correctly(
         items=[],

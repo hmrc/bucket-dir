@@ -117,9 +117,9 @@ class BucketDirGenerator:
 
         key = f"{path[1:]}index.html"
 
-        new_hash = hashlib.md5(
+        new_hash = hashlib.md5(  # nosec # skip bandit check as this is not used for encryption
             index_document
-        ).hexdigest()  # nosec # skip bandit check as this is not used for encryption
+        ).hexdigest()
         self.logger.debug(
             f"{key} comparing existing hash: {index_hashes.get(key)} to new hash: {new_hash}"
         )

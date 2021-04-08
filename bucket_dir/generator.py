@@ -117,10 +117,13 @@ class BucketDirGenerator:
 
         key = f"{path[1:]}index.html"
 
+        new_hash = hashlib.md5(
+            index_document
+        ).hexdigest()  # nosec # skip bandit check as this is not used for encryption
         self.logger.debug(
-            f"{key} comparing existing hash: {index_hashes.get(key)} to new hash: {hashlib.md5(index_document).hexdigest()}"
+            f"{key} comparing existing hash: {index_hashes.get(key)} to new hash: {new_hash}"
         )
-        if index_hashes.get(key) == hashlib.md5(index_document).hexdigest():
+        if index_hashes.get(key) == new_hash:
             self.logger.info(f"Skipping unchanged index for {key}")
         else:
             self.logger.info(f"Uploading index for {key}")

@@ -53,6 +53,21 @@ class BucketDirGenerator:
         return indexes
 
     @staticmethod
+    def generate_ascending_prefixes(directory_key):
+        parts = directory_key.split("/")
+        parts = list(filter(len, parts))
+        paths = []
+        paths.append("")
+        for num in range(len(parts)):
+            index = num + 1
+            level = "/".join(parts[:index])
+            if (not level.endswith("/")) and (level != ""):
+                level += "/"
+            paths.append(level)
+        paths.reverse()
+        return paths
+
+    @staticmethod
     def generate_index_hash(content_list):
         index_hash = {}
         for content in content_list:

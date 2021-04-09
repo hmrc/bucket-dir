@@ -57,7 +57,7 @@ def simulate_s3(folders_to_be_indexed):
     httpretty.register_uri(
         httpretty.GET,
         "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=5&continuation-token=foo-continuation-token&encoding-type=url",
-        match_query_string=True,
+        match_querystring=False,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
     <Prefix></Prefix>
@@ -113,7 +113,7 @@ def simulate_s3(folders_to_be_indexed):
     httpretty.register_uri(
         httpretty.GET,
         "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=5&encoding-type=url",
-        match_query_string=True,
+        match_querystring=False,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
     <Prefix></Prefix>
@@ -265,7 +265,6 @@ def test_generate_bucket_dir(aws_creds):
         items=[{"name": "deep-object", "last_modified": "22-Feb-2021 10:26", "size": "16.5 MB"}],
         page_name="foo-bucket/deep-folder/i/ii/iii/",
     )
-
     assert index_created_correctly(
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},

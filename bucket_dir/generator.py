@@ -124,6 +124,12 @@ class BucketDirGenerator:
         self.logger.info(f"Found {len(contents)} objects in the {bucket} bucket.")
         return contents
 
+    def build_ascending_folders(self, s3, target_path):
+        folders = {}
+        for prefix in self.generate_ascending_prefixes(target_path):
+            folders[prefix] = s3.fetch_folder_content(prefix)
+        return folders
+
     def render_and_upload_index_document_to_s3(self, bucket, site_name, path, index, index_hashes):
         self.logger.debug(f"Rendering index for {path}.")
         index_document = index.render(

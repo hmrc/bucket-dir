@@ -66,8 +66,8 @@ def simulate_s3_folder(prefix, files, subdirectories):
     <Name>foo-bucket</Name>
     <Prefix>{url_prefix}</Prefix>
     <NextContinuationToken>foo-continuation-token</NextContinuationToken>
-    <KeyCount>{len(file)}</KeyCount>
-    <MaxKeys>{len(file)}</MaxKeys>
+    <KeyCount>{len(contents)}</KeyCount>
+    <MaxKeys>{len(contents)}</MaxKeys>
     <Delimiter>{urllib.parse.quote_plus("/")}</Delimiter>
     <EncodingType>url</EncodingType>
     <IsTruncated>true</IsTruncated>
@@ -75,13 +75,13 @@ def simulate_s3_folder(prefix, files, subdirectories):
     )
     httpretty.register_uri(
         httpretty.GET,
-        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix=foo%2F&delimiter=%2F&continuation-token=foo-continuation-token&encoding-type=url",
+        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&continuation-token=foo-continuation-token&encoding-type=url",
         match_querystring=True,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
     <Prefix></Prefix>
-    <KeyCount>{len(file)}</KeyCount>
-    <MaxKeys>{len(file)}</MaxKeys>
+    <KeyCount>{len(contents)}</KeyCount>
+    <MaxKeys>{len(contents)}</MaxKeys>
     <Delimiter>/</Delimiter>
     <EncodingType>url</EncodingType>
     <IsTruncated>false</IsTruncated>

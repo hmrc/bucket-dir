@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import urllib
+
 from httpretty import httpretty
 
 from bucket_dir.s3 import Folder
@@ -17,6 +19,7 @@ def test_folder_object():
 
 def test_fetch_folder_content(aws_creds):
     simulate_s3_folder(
+        prefix="foo/",
         files=["/foo/index.html", "/foo/otherfile.jar"],
         subdirectories=[
             "/foo/bar/",
@@ -24,18 +27,22 @@ def test_fetch_folder_content(aws_creds):
         ],
     )
     s3 = S3(bucket_name="foo-bucket")
-    folder = s3.fetch_folder_content(folder_key="foo")
+    folder = s3.fetch_folder_content(folder_key="foo/")
 
-    assert folder.prefix == "foo"
+    assert len(httpretty.latest_requests) == 2
+
+    assert folder.prefix == "foo/"
     assert folder.subdirectories == ["/foo/bar/", "/foo/baz/"]
     assert len(folder.files) == 2
     assert folder.files[0]["Key"] == "/foo/index.html"
     assert folder.files[1]["Key"] == "/foo/otherfile.jar"
 
 
-def simulate_s3_folder(files, subdirectories):
+def simulate_s3_folder(prefix, files, subdirectories):
     httpretty.enable(allow_net_connect=False)
     httpretty.reset()
+
+    url_prefix = urllib.parse.quote_plus(prefix)
 
     contents = ""
     for file in files:
@@ -53,33 +60,32 @@ def simulate_s3_folder(files, subdirectories):
 
     httpretty.register_uri(
         httpretty.GET,
-        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=5&continuation-token=foo-continuation-token&encoding-type=url",
-        match_query_string=True,
+        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&encoding-type=url",
+        match_querystring=True,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
-    <Prefix></Prefix>
-    <ContinuationToken>foo-continuation-token</ContinuationToken>
-    <KeyCount>1</KeyCount>
-    <MaxKeys>1000</MaxKeys>
-    <Delimiter>/</Delimiter>
+    <Prefix>{url_prefix}</Prefix>
+    <NextContinuationToken>foo-continuation-token</NextContinuationToken>
+    <KeyCount>{len(file)}</KeyCount>
+    <MaxKeys>{len(file)}</MaxKeys>
+    <Delimiter>{urllib.parse.quote_plus("/")}</Delimiter>
     <EncodingType>url</EncodingType>
-    <IsTruncated>false</IsTruncated>
-    {commonprefixes}
+    <IsTruncated>true</IsTruncated>
     </ListBucketResult>""",
     )
     httpretty.register_uri(
         httpretty.GET,
-        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=5&encoding-type=url",
-        match_query_string=True,
+        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix=foo%2F&delimiter=%2F&continuation-token=foo-continuation-token&encoding-type=url",
+        match_querystring=True,
         body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
     <Name>foo-bucket</Name>
     <Prefix></Prefix>
-    <NextContinuationToken>foo-continuation-token</NextContinuationToken>
-    <KeyCount>1</KeyCount>
-    <MaxKeys>1000</MaxKeys>
+    <KeyCount>{len(file)}</KeyCount>
+    <MaxKeys>{len(file)}</MaxKeys>
     <Delimiter>/</Delimiter>
     <EncodingType>url</EncodingType>
-    <IsTruncated>true</IsTruncated>
+    <IsTruncated>false</IsTruncated>
     {contents}
+    {commonprefixes}
 </ListBucketResult>""",
     )

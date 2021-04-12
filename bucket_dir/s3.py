@@ -8,6 +8,12 @@ class Folder:
         self.files = files
         self.subdirectories = subdirectories
 
+    def get_index_hash(self):
+        for file in self.files:
+            if file["Key"] == f"{self.prefix}index.html":
+                return file["ETag"].replace('"', "")
+        return None
+
 
 class S3:
     def __init__(self, bucket_name):

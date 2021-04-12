@@ -35,7 +35,7 @@ def configure_logging(log_level="info") -> None:
 )
 @click.option(
     "--target-path",
-    default="/",
+    default="",
     help="Only generate indexes relating to a certain folder/object. E.g. '/foo-folder/bar-object'. If omitted, the entire bucket will be indexed.",
 )
 @click.version_option()

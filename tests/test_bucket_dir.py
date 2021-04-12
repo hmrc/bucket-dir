@@ -59,7 +59,7 @@ def assert_index_created_correctly(
     assert body_formatted_correctly(body)
 
 
-def simulate_s3(folders_to_be_indexed):
+def old_simulate_s3(folders_to_be_indexed):
     # httpretty.enable(allow_net_connect=False)
     # httpretty.reset()
     httpretty.register_uri(
@@ -176,43 +176,85 @@ def simulate_s3(folders_to_be_indexed):
 
 
 def simulate_s3_big_bucket():
-    httpretty.enable(allow_net_connect=False)
-    httpretty.reset()
-    contents = ""
-    for folder_number in range(1000):
-        contents += f"""<Contents>
-        <Key>folder-{folder_number}/foo-object</Key>
-        <LastModified>2021-02-22T10:23:44.000Z</LastModified>
-        <ETag>&quot;18f190bd12aa40e3e7199c665e8fcc9c&quot;</ETag>
-        <Size>30087</Size>
-        <StorageClass>STANDARD</StorageClass>
-    </Contents>"""
-    body = f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-    <Name>foo-bucket</Name>
-    <Prefix></Prefix>
-    <KeyCount>1000</KeyCount>
-    <MaxKeys>1000</MaxKeys>
-    <EncodingType>url</EncodingType>
-    <IsTruncated>false</IsTruncated>
-    {contents}
-</ListBucketResult>"""
-    httpretty.register_uri(
-        httpretty.GET,
-        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&max-keys=1000&encoding-type=url",
-        match_query_string=True,
-        body=body,
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=[
+            "deep-folder/",
+            "empty-folder/",
+            "folder with spaces/",
+            "regular-folder/",
+            "FOLDER_With_UnUsUaL_n4m3/",
+        ],
+        files=[
+            {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10800"},
+        ],
     )
-    httpretty.register_uri(
-        httpretty.PUT,
-        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/index.html",
-        body=put_object_request_callback,
+    simulate_s3_folder(
+        prefix="empty-folder/",
+        subdirectories=[],
+        files=[],
     )
-    for folder_number in range(1000):
-        httpretty.register_uri(
-            httpretty.PUT,
-            f"https://foo-bucket.s3.eu-west-1.amazonaws.com/folder-{folder_number}/index.html",
-            body=put_object_request_callback,
-        )
+    simulate_s3_folder(
+        prefix="folder with spaces/", subdirectories=[], files=[{"name": "an+object+with+spaces"}]
+    )
+    simulate_s3_folder(
+        prefix="regular-folder/",
+        subdirectories=[],
+        files=[
+            {"name": "object-two.bar", "last_modified": "2021-02-22T10:23:11.000Z", "size": 26921},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="folder+with+spaces/",
+        subdirectories=[],
+        files=[
+            {"name": "an+object+with+spaces"},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/",
+        subdirectories=[
+            "deep-folder/i/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/",
+        subdirectories=[
+            "deep-folder/i/ii/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/ii/",
+        subdirectories=[
+            "deep-folder/i/ii/iii/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/ii/iii/",
+        subdirectories=[],
+        files=[
+            {"name": "index.html", "etag": "e105d5b4e531b708077eecff7f62b509"},
+            {"name": "deep-object"},
+        ],
+        mock_upload=False,
+    )
+    simulate_s3_folder(
+        prefix="FOLDER_With_UnUsUaL_n4m3/",
+        subdirectories=["FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/"],
+        files=[
+            {"name": "index.html", "last_modified": "22-Feb-2021 10:23"},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
+        subdirectories=[],
+        files=[
+            {"name": "see!", "last_modified": "22-Feb-2021 10:23"},
+        ],
+    )
 
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
@@ -426,6 +468,7 @@ def test_generate_bucket_dir(aws_creds):
         "deep-folder/i/ii/blah",
     ],
 )
+@httpretty.activate(allow_net_connect=False)
 def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
     mocker.patch.object(
         sys,
@@ -438,47 +481,79 @@ def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
             "--single-threaded",
         ],
     )
-    simulate_s3(
-        folders_to_be_indexed=[
-            "/",
-            "/deep-folder/",
-            "/deep-folder/i/",
-            "/deep-folder/i/ii/",
-            "/deep-folder/i/ii/iii/",
-        ]
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=[
+            "deep-folder/",
+            "empty-folder/",
+        ],
+        files=[
+            {"name": "root-one", "last_modified": "22-Feb-2021 10:23", "size": "30100"},
+            {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10800"},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/",
+        subdirectories=[
+            "deep-folder/i/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/",
+        subdirectories=[
+            "deep-folder/i/ii/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/ii/",
+        subdirectories=[
+            "deep-folder/i/ii/iii/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/ii/folderthatisnotthere/",
+        subdirectories=[],
+        files=[],
+        mock_upload=False,
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/ii/iii/",
+        subdirectories=[],
+        files=[
+            {"name": "deep-object"},
+        ],
     )
     with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
     assert system_exit.value.code == 0
-    assert assert_index_created_correctly(
+    assert_index_created_correctly(
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},
             {"name": "empty-folder/", "last_modified": "-", "size": "-"},
-            {
-                "name": "folder with spaces/",
-                "last_modified": "-",
-                "size": "-",
-                "encoded_name": "folder%20with%20spaces/",
-            },
-            {"name": "FOLDER_With_UnUsUaL_n4m3/", "last_modified": "-", "size": "-"},
-            {"name": "regular-folder/", "last_modified": "-", "size": "-"},
             {"name": "root-one", "last_modified": "22-Feb-2021 10:23", "size": "30.1 kB"},
             {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10.8 kB"},
         ],
-        page_name="foo-bucket/",
+        path="/",
+        site_name="foo-bucket",
         root_index=True,
     )
-    assert assert_index_created_correctly(
+    assert_index_created_correctly(
         items=[{"name": "i/", "last_modified": "-", "size": "-"}],
-        page_name="foo-bucket/deep-folder/",
+        path="/deep-folder/",
+        site_name="foo-bucket",
     )
-    assert assert_index_created_correctly(
+    assert_index_created_correctly(
         items=[{"name": "ii/", "last_modified": "-", "size": "-"}],
-        page_name="foo-bucket/deep-folder/i/",
+        path="/deep-folder/i/",
+        site_name="foo-bucket",
     )
-    assert assert_index_created_correctly(
+    assert_index_created_correctly(
         items=[{"name": "iii/", "last_modified": "-", "size": "-"}],
-        page_name="foo-bucket/deep-folder/i/ii/",
+        path="/deep-folder/i/ii/",
+        site_name="foo-bucket",
     )
 
 
@@ -495,46 +570,33 @@ def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
         "--single-threaded",
     ],
 )
+@httpretty.activate(allow_net_connect=False)
 def test_generate_bucket_dir_with_excluded_objects(aws_creds):
-    simulate_s3(
-        folders_to_be_indexed=[
-            "/",
-            "/deep-folder/",
-            "/deep-folder/i/",
-            "/deep-folder/i/ii/",
-            "/deep-folder/i/ii/iii/",
-            "/empty-folder/",
-            "/folder with spaces/",
-            "/regular-folder/",
-            "/FOLDER_With_UnUsUaL_n4m3/",
-            "/FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
-        ]
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=[],
+        files=[
+            {"name": "the-not-excluded-thing", "last_modified": "22-Feb-2021 10:23"},
+            {"name": "root-one"},
+            {"name": "object-two.bar"},
+            {"name": "favicon.ico"},
+            {"name": "index.html"},
+        ],
     )
     with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
     assert system_exit.value.code == 0
-    assert assert_index_created_correctly(
+    assert_index_created_correctly(
         items=[
-            {"name": "deep-folder/", "last_modified": "-", "size": "-"},
-            {"name": "empty-folder/", "last_modified": "-", "size": "-"},
             {
-                "name": "folder with spaces/",
-                "last_modified": "-",
-                "size": "-",
-                "encoded_name": "folder%20with%20spaces/",
+                "name": "the-not-excluded-thing",
+                "last_modified": "22-Feb-2021 10:23",
+                "size": "1.2 kB",
             },
-            {"name": "FOLDER_With_UnUsUaL_n4m3/", "last_modified": "-", "size": "-"},
-            {"name": "regular-folder/", "last_modified": "-", "size": "-"},
-            {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10.8 kB"},
         ],
-        page_name="foo-bucket/",
+        path="/",
+        site_name="foo-bucket",
         root_index=True,
-    )
-    assert assert_index_created_correctly(
-        items=[
-            {"name": "object-one.foo", "last_modified": "22-Feb-2021 10:22", "size": "16.5 MB"},
-        ],
-        page_name="foo-bucket/regular-folder/",
     )
 
 
@@ -546,6 +608,7 @@ def test_generate_bucket_dir_with_excluded_objects(aws_creds):
         "foo-bucket",
     ],
 )
+@httpretty.activate(allow_net_connect=False)
 def test_generate_bucket_dir_multithreaded_smoke(aws_creds):
     """We cannot use httpretty when multithreading, see:
 
@@ -556,19 +619,90 @@ def test_generate_bucket_dir_multithreaded_smoke(aws_creds):
 
     This test ensures that mulithreading itself basically works.
     """
-    simulate_s3(
-        folders_to_be_indexed=[
-            "/",
-            "/deep-folder/",
-            "/deep-folder/i/",
-            "/deep-folder/i/ii/",
-            "/deep-folder/i/ii/iii/",
-            "/empty-folder/",
-            "/folder with spaces/",
-            "/regular-folder/",
-            "/FOLDER_With_UnUsUaL_n4m3/",
-            "/FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
-        ]
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=[
+            "deep-folder/",
+            "empty-folder/",
+            "folder with spaces/",
+            "regular-folder/",
+            "FOLDER_With_UnUsUaL_n4m3/",
+        ],
+        files=[
+            {"name": "root-one", "last_modified": "22-Feb-2021 10:23", "size": "30100"},
+            {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10800"},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="empty-folder/",
+        subdirectories=[],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="folder with spaces/", subdirectories=[], files=[{"name": "an+object+with+spaces"}]
+    )
+    simulate_s3_folder(
+        prefix="regular-folder/",
+        subdirectories=[],
+        files=[
+            {
+                "name": "object-one.foo",
+                "last_modified": "2021-02-22T10:22:36.000Z",
+                "size": 16524288,
+            },
+            {"name": "object-two.bar", "last_modified": "2021-02-22T10:23:11.000Z", "size": 26921},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="folder+with+spaces/",
+        subdirectories=[],
+        files=[
+            {"name": "an+object+with+spaces"},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/",
+        subdirectories=[
+            "deep-folder/i/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/",
+        subdirectories=[
+            "deep-folder/i/ii/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/ii/",
+        subdirectories=[
+            "deep-folder/i/ii/iii/",
+        ],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="deep-folder/i/ii/iii/",
+        subdirectories=[],
+        files=[
+            {"name": "index.html", "etag": "e105d5b4e531b708077eecff7f62b509"},
+            {"name": "deep-object"},
+        ],
+        mock_upload=False,
+    )
+    simulate_s3_folder(
+        prefix="FOLDER_With_UnUsUaL_n4m3/",
+        subdirectories=["FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/"],
+        files=[
+            {"name": "index.html", "last_modified": "22-Feb-2021 10:23"},
+        ],
+    )
+    simulate_s3_folder(
+        prefix="FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
+        subdirectories=[],
+        files=[
+            {"name": "see!", "last_modified": "22-Feb-2021 10:23"},
+        ],
     )
     with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
@@ -580,6 +714,7 @@ def test_generate_bucket_dir_multithreaded_smoke(aws_creds):
     reason="Performance test, run explicitly for benchmarking.",
 )
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
+@httpretty.activate(allow_net_connect=False)
 def test_generate_bucket_dir_big_bucket(aws_creds):
     simulate_s3_big_bucket()
     with pytest.raises(SystemExit) as system_exit:

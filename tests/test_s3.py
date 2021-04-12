@@ -25,6 +25,7 @@ def test_get_index_hash():
     assert folder.get_index_hash() == "12345"
 
 
+@httpretty.activate(allow_net_connect=False)
 def test_fetch_folder_content(aws_creds):
     simulate_s3_folder(
         prefix="foo/",
@@ -54,9 +55,6 @@ def put_object_request_callback(request, uri, response_headers):
 
 
 def simulate_s3_folder(prefix, files, subdirectories, mock_upload=True):
-    httpretty.enable(allow_net_connect=False)
-    httpretty.reset()
-
     if mock_upload:
         httpretty.register_uri(
             httpretty.PUT,
@@ -80,6 +78,9 @@ def simulate_s3_folder(prefix, files, subdirectories, mock_upload=True):
     for folders in subdirectories:
         commonprefixes += f"<CommonPrefixes><Prefix>{folders}</Prefix></CommonPrefixes>"
 
+    print(
+        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&encoding-type=url"
+    )
     httpretty.register_uri(
         httpretty.GET,
         f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&encoding-type=url",

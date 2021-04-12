@@ -21,7 +21,6 @@ class BucketDirGenerator:
             trim_blocks=True,
             lstrip_blocks=True,
         )
-        self.s3_client = boto3.client("s3")
 
     @staticmethod
     def generate_ascending_prefixes(directory_key):
@@ -39,7 +38,15 @@ class BucketDirGenerator:
     def generate(
         self, bucket, site_name, exclude_objects=None, single_threaded=False, target_path=""
     ):
+        # todo make single_threaded actually do something
         self.s3_gateway = S3(bucket_name=bucket)  # todo move this to init
+
+        if target_path.startswith("/"):
+            target_path = target_path[1:]
+
+        if not target_path.endswith("/"):
+            last_slash = target_path.rfind("/")
+            target_path = target_path[: last_slash + 1]
 
         work_queue = [target_path]
         while len(work_queue) > 0:
@@ -80,7 +87,7 @@ class BucketDirGenerator:
         else:
             self.logger.info(f"Uploading index for {key}")
 
-            self.s3_client.put_object(
+            self.s3_gateway.s3_client.put_object(
                 Body=index_document,
                 Bucket=bucket,
                 CacheControl="max-age=0",

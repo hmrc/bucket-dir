@@ -42,29 +42,21 @@ class Index:
                 continue
 
             index_items.append(
-                {
-                    "encoded_name": urllib.parse.quote(file_name),
-                    "name": file_name,
-                    "name_padding": " ".ljust(
-                        longest_name_length - len(item["Key"]) + column_padding
-                    ),
-                    "modified": item["LastModified"]
-                    .strftime("%d-%b-%Y %H:%M")
-                    .ljust(longest_modified_length + column_padding),
-                    "size": humanize.naturalsize(item["Size"]),
-                }
+                self.file_index_item(
+                    column_padding, file_name, item, longest_modified_length, longest_name_length
+                )
             )
 
         for folder in self.folders:
             folder_name = folder.split("/")[-2] + "/"
             index_items.append(
-                {
-                    "encoded_name": urllib.parse.quote(folder_name),
-                    "name": folder_name,
-                    "name_padding": " ".ljust(longest_name_length - len(folder) + column_padding),
-                    "modified": "-".ljust(longest_modified_length + column_padding),
-                    "size": "-",
-                }
+                self.folder_index_item(
+                    column_padding,
+                    folder,
+                    folder_name,
+                    longest_modified_length,
+                    longest_name_length,
+                )
             )
 
         return template.render(
@@ -73,3 +65,27 @@ class Index:
             index_items=index_items,
             not_root=self.path != "",
         )
+
+    def folder_index_item(
+        self, column_padding, folder, folder_name, longest_modified_length, longest_name_length
+    ):
+        return {
+            "encoded_name": urllib.parse.quote(folder_name),
+            "name": folder_name,
+            "name_padding": " ".ljust(longest_name_length - len(folder) + column_padding),
+            "modified": "-".ljust(longest_modified_length + column_padding),
+            "size": "-",
+        }
+
+    def file_index_item(
+        self, column_padding, file_name, item, longest_modified_length, longest_name_length
+    ):
+        return {
+            "encoded_name": urllib.parse.quote(file_name),
+            "name": file_name,
+            "name_padding": " ".ljust(longest_name_length - len(item["Key"]) + column_padding),
+            "modified": item["LastModified"]
+            .strftime("%d-%b-%Y %H:%M")
+            .ljust(longest_modified_length + column_padding),
+            "size": humanize.naturalsize(item["Size"]),
+        }

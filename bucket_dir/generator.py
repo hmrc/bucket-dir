@@ -9,7 +9,6 @@ from jinja2 import PackageLoader
 from jinja2 import select_autoescape
 
 from .index import Index
-from .item import Item
 from .s3 import S3
 
 

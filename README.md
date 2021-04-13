@@ -88,8 +88,7 @@ Examples of how you can front public and private buckets with CloudFront, and ho
 ```
 from bucket_dir import BucketDirGenerator
 
-bucket_dir_generator = BucketDirGenerator()
-bucket_dir_generator.generate(bucket="foo-bucket", site_name="my static site")
+BucketDirGenerator(bucket_name="foo-bucket", site_name="my static site").generate()
 ```
 
 ### Character support

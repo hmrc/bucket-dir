@@ -529,6 +529,37 @@ def test_generate_bucket_dir_with_target_path(aws_creds, mocker, target_path):
 @mock.patch.object(
     sys,
     "argv",
+    ["bucket-dir", "foo-bucket", "--site-name", "test-site-name"],
+)
+@httpretty.activate(allow_net_connect=False)
+def test_generate_bucket_dir_with_site_name(aws_creds):
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=[],
+        files=[
+            {"name": "a-file", "last_modified": "22-Feb-2021 10:23"},
+        ],
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 0
+    assert_index_created_correctly(
+        items=[
+            {
+                "name": "a-file",
+                "last_modified": "22-Feb-2021 10:23",
+                "size": "1.2 kB",
+            },
+        ],
+        path="/",
+        site_name="test-site-name",
+        root_index=True,
+    )
+
+
+@mock.patch.object(
+    sys,
+    "argv",
     [
         "bucket-dir",
         "foo-bucket",

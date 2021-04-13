@@ -38,14 +38,25 @@ def configure_logging(log_level="info") -> None:
     default="",
     help="Only generate indexes relating to a certain folder/object. E.g. '/foo-folder/bar-object'. If omitted, the entire bucket will be indexed.",
 )
+@click.option(
+    "--site-name",
+    help="Will appear as the title on the index pages. Defaults to the BUCKET",
+    default=None,
+)
 @click.version_option()
-def run_cli(bucket, exclude_object, single_threaded, target_path):
+def run_cli(bucket, exclude_object, single_threaded, target_path, site_name):
     """Generate directory listings for an S3 BUCKET.
 
     BUCKET is the name of the bucket to be indexed."""
     configure_logging()
     logger = logging.getLogger("bucket_dir")
-    bucket_dir_generator = BucketDirGenerator(logger=logger, bucket_name=bucket, site_name=bucket)
+
+    if not site_name:
+        site_name = bucket
+
+    bucket_dir_generator = BucketDirGenerator(
+        logger=logger, bucket_name=bucket, site_name=site_name
+    )
     try:
         bucket_dir_generator.generate(
             exclude_objects=list(exclude_object),

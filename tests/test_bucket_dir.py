@@ -179,82 +179,32 @@ def simulate_s3_big_bucket():
     simulate_s3_folder(
         prefix="",
         subdirectories=[
-            "deep-folder/",
-            "empty-folder/",
-            "folder with spaces/",
-            "regular-folder/",
-            "FOLDER_With_UnUsUaL_n4m3/",
-        ],
-        files=[
-            {"name": "root-two", "last_modified": "22-Feb-2021 10:24", "size": "10800"},
-        ],
-    )
-    simulate_s3_folder(
-        prefix="empty-folder/",
-        subdirectories=[],
-        files=[],
-    )
-    simulate_s3_folder(
-        prefix="folder with spaces/", subdirectories=[], files=[{"name": "an+object+with+spaces"}]
-    )
-    simulate_s3_folder(
-        prefix="regular-folder/",
-        subdirectories=[],
-        files=[
-            {"name": "object-two.bar", "last_modified": "2021-02-22T10:23:11.000Z", "size": 26921},
-        ],
-    )
-    simulate_s3_folder(
-        prefix="folder+with+spaces/",
-        subdirectories=[],
-        files=[
-            {"name": "an+object+with+spaces"},
-        ],
-    )
-    simulate_s3_folder(
-        prefix="deep-folder/",
-        subdirectories=[
-            "deep-folder/i/",
+            "big-folder/",
         ],
         files=[],
     )
+
+    prefixes = []
+    for n in range(1000):
+        key = f"big-folder/{n}/"
+        prefixes.append(key)
+        simulate_s3_folder(
+            prefix=key,
+            subdirectories=[],
+            files=[
+                {
+                    "name": "object-two.bar",
+                    "last_modified": "2021-02-22T10:23:11.000Z",
+                    "size": 26921,
+                }
+            ],
+        )
     simulate_s3_folder(
-        prefix="deep-folder/i/",
-        subdirectories=[
-            "deep-folder/i/ii/",
-        ],
+        prefix="big-folder/",
+        subdirectories=prefixes,
         files=[],
     )
-    simulate_s3_folder(
-        prefix="deep-folder/i/ii/",
-        subdirectories=[
-            "deep-folder/i/ii/iii/",
-        ],
-        files=[],
-    )
-    simulate_s3_folder(
-        prefix="deep-folder/i/ii/iii/",
-        subdirectories=[],
-        files=[
-            {"name": "index.html", "etag": "e105d5b4e531b708077eecff7f62b509"},
-            {"name": "deep-object"},
-        ],
-        mock_upload=False,
-    )
-    simulate_s3_folder(
-        prefix="FOLDER_With_UnUsUaL_n4m3/",
-        subdirectories=["FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/"],
-        files=[
-            {"name": "index.html", "last_modified": "22-Feb-2021 10:23"},
-        ],
-    )
-    simulate_s3_folder(
-        prefix="FOLDER_With_UnUsUaL_n4m3/it\\'gets*even.(weirder)/",
-        subdirectories=[],
-        files=[
-            {"name": "see!", "last_modified": "22-Feb-2021 10:23"},
-        ],
-    )
+    print("mocked-folders")
 
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])

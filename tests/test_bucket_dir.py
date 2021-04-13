@@ -179,17 +179,32 @@ def simulate_s3_big_bucket():
     simulate_s3_folder(
         prefix="",
         subdirectories=[
-            "big-folder/",
+            "big-folder-1/",
+            "big-folder-2/",
         ],
         files=[],
     )
 
-    prefixes = []
-    for n in range(1000):
-        key = f"big-folder/{n}/"
-        prefixes.append(key)
+    big_folder_1_prefixes = []
+    big_folder_2_prefixes = []
+    for n in range(100):
+        key1 = f"big-folder-1/{n}/"
+        key2 = f"big-folder-2/{n}/"
+        big_folder_1_prefixes.append(key1)
+        big_folder_2_prefixes.append(key2)
         simulate_s3_folder(
-            prefix=key,
+            prefix=key1,
+            subdirectories=[],
+            files=[
+                {
+                    "name": "object-two.bar",
+                    "last_modified": "2021-02-22T10:23:11.000Z",
+                    "size": 26921,
+                }
+            ],
+        )
+        simulate_s3_folder(
+            prefix=key2,
             subdirectories=[],
             files=[
                 {
@@ -200,11 +215,15 @@ def simulate_s3_big_bucket():
             ],
         )
     simulate_s3_folder(
-        prefix="big-folder/",
-        subdirectories=prefixes,
+        prefix="big-folder-1/",
+        subdirectories=big_folder_1_prefixes,
         files=[],
     )
-    print("mocked-folders")
+    simulate_s3_folder(
+        prefix="big-folder-2/",
+        subdirectories=big_folder_2_prefixes,
+        files=[],
+    )
 
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])

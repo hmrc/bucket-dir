@@ -78,9 +78,6 @@ def simulate_s3_folder(prefix, files, subdirectories, mock_upload=True):
     for folders in subdirectories:
         commonprefixes += f"<CommonPrefixes><Prefix>{folders}</Prefix></CommonPrefixes>"
 
-    print(
-        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&encoding-type=url"
-    )
     httpretty.register_uri(
         httpretty.GET,
         f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&encoding-type=url",

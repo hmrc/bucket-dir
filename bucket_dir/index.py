@@ -13,11 +13,6 @@ class Index:
         if extra_excluded_items:
             self.excluded_items.extend(extra_excluded_items)
 
-    def add_item(self, item):
-        existing_item = [i for i in self.items if i.name == item.name]
-        if not existing_item:
-            self.items.append(item)
-
     def should_exclude(self, file_name):
         return file_name in self.excluded_items
 

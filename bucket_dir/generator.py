@@ -54,7 +54,7 @@ class BucketDirGenerator:
         max_workers = 1 if single_threaded else None
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            self.logger.info(f"Running {executor.max_workers} worker threads")
+            self.logger.info(f"Running {executor._max_workers} worker threads")
             futures = deque([])
             futures.append(
                 executor.submit(

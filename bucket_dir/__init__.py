@@ -35,7 +35,7 @@ def configure_logging(log_level="info") -> None:
 )
 @click.option(
     "--target-path",
-    default="/",
+    default="",
     help="Only generate indexes relating to a certain folder/object. E.g. '/foo-folder/bar-object'. If omitted, the entire bucket will be indexed.",
 )
 @click.version_option()
@@ -45,11 +45,9 @@ def run_cli(bucket, exclude_object, single_threaded, target_path):
     BUCKET is the name of the bucket to be indexed."""
     configure_logging()
     logger = logging.getLogger("bucket_dir")
-    bucket_dir_generator = BucketDirGenerator(logger=logger)
+    bucket_dir_generator = BucketDirGenerator(logger=logger, bucket_name=bucket, site_name=bucket)
     try:
         bucket_dir_generator.generate(
-            bucket=bucket,
-            site_name=bucket,
             exclude_objects=list(exclude_object),
             single_threaded=single_threaded,
             target_path=target_path,

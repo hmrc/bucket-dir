@@ -8,6 +8,12 @@ class Folder:
         self.files = files
         self.subdirectories = subdirectories
 
+    def get_index_hash(self):
+        for file in self.files:
+            if file["Key"] == f"{self.prefix}index.html":
+                return file["ETag"].replace('"', "")
+        return None
+
 
 class S3:
     def __init__(self, bucket_name):
@@ -28,3 +34,12 @@ class S3:
         subdirectories = list(map(lambda data: data["Prefix"], subdirectories))
 
         return Folder(prefix=folder_key, subdirectories=subdirectories, files=files)
+
+    def put_object(self, body, key):
+        self.s3_client.put_object(
+            Body=body,
+            Bucket=self.bucket_name,
+            CacheControl="max-age=0",
+            ContentType="text/html",
+            Key=key,
+        )

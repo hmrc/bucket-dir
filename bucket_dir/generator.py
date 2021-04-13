@@ -54,6 +54,7 @@ class BucketDirGenerator:
         max_workers = 1 if single_threaded else None
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            self.logger.info(f"Running {executor.max_workers} worker threads")
             futures = deque([])
             futures.append(
                 executor.submit(
@@ -74,21 +75,21 @@ class BucketDirGenerator:
                 )
 
             self.wait_for_all_futures_recursively(futures)
+            self.logger.info(f"Finished generation")
 
     def wait_for_all_futures_recursively(self, futures):
-        self.logger.info(f"waiting for all futures to finish")
+        self.logger.debug(f"waiting for all futures to finish")
         while len(futures) > 0:
             sub_futures_array = futures.popleft().result()
             futures.extend(sub_futures_array)
 
     def render_and_upload_index_document_to_s3(self, prefix, extra_excluded_items, executor=None):
-        self.logger.info(f"Rendering index for {prefix}.")
+        self.logger.debug(f"Rendering index for {prefix}.")
         folder = self.s3_gateway.fetch_folder_content(prefix)
 
         futures = []
         if executor is not None:
             for subdirectory in folder.subdirectories:
-                self.logger.info(f"{prefix} job submitting job for {subdirectory}")
                 futures.append(
                     executor.submit(
                         self.render_and_upload_index_document_to_s3,

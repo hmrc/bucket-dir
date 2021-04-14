@@ -113,7 +113,7 @@ class BucketDirGenerator:
             index_document
         ).hexdigest()
         old_hash = folder.get_index_hash()
-        self.logger.debug(f"{key} comparing existing hash: {old_hash} to new hash: {new_hash}")
+        self.logger.info(f"{key} comparing existing hash: {old_hash} to new hash: {new_hash}")
         if old_hash == new_hash:
             self.logger.info(f"Skipping unchanged index for {key}")
         else:

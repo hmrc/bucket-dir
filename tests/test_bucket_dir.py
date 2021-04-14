@@ -191,7 +191,7 @@ def test_generate_bucket_dir(aws_creds):
         prefix="deep-folder/i/ii/iii/",
         subdirectories=[],
         files=[
-            {"name": "index.html", "etag": "8d56fdce5b92c89f1900756084ee2e57"},
+            {"name": "index.html", "etag": "164b668c016a3b64086d3326850209b9"},
             {"name": "deep-object"},
         ],
         mock_upload=False,
@@ -558,7 +558,7 @@ def test_generate_bucket_dir_multithreaded_smoke(aws_creds):
         prefix="deep-folder/i/ii/iii/",
         subdirectories=[],
         files=[
-            {"name": "index.html", "etag": "8d56fdce5b92c89f1900756084ee2e57"},
+            {"name": "index.html", "etag": "164b668c016a3b64086d3326850209b9"},
             {"name": "deep-object"},
         ],
         mock_upload=False,

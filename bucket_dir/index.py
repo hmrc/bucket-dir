@@ -18,16 +18,6 @@ class Index:
 
     def render(self, site_name, template_environment):
         template = template_environment.get_template("index.html.j2")
-        folder_lengths = list(map(len, self.folders))
-        file_lengths = [len(item["Key"]) for item in self.items]
-        longest_name_length = max(folder_lengths + file_lengths + [5])
-
-        longest_modified_length = max(
-            [len(str(item["LastModified"])) for item in self.items] + [14]
-        )
-
-        column_padding = 3
-        table_headers = f"{'Name'.ljust(longest_name_length + column_padding)}{'Last modified'.ljust(longest_modified_length + column_padding)}Size"
 
         index_items = []
         for item in self.items:
@@ -36,51 +26,39 @@ class Index:
             if self.should_exclude(file_name):
                 continue
 
-            index_items.append(
-                self.file_index_item(
-                    column_padding, file_name, item, longest_modified_length, longest_name_length
-                )
-            )
+            index_items.append(self.file_index_item(file_name, item))
 
         for folder in self.folders:
             folder_name = folder.split("/")[-2] + "/"
             index_items.append(
                 self.folder_index_item(
-                    column_padding,
                     folder,
                     folder_name,
-                    longest_modified_length,
-                    longest_name_length,
                 )
             )
 
         return template.render(
             page_name=f"{site_name}/{self.path}",
-            table_headers=table_headers,
             index_items=index_items,
             not_root=self.path != "",
         )
 
-    def folder_index_item(
-        self, column_padding, folder, folder_name, longest_modified_length, longest_name_length
-    ):
+    def folder_index_item(self, folder, folder_name):
         return {
             "encoded_name": urllib.parse.quote(folder_name),
             "name": folder_name,
-            "name_padding": " ".ljust(longest_name_length - len(folder) + column_padding),
-            "modified": "-".ljust(longest_modified_length + column_padding),
+            "modified": "-",
             "size": "-",
         }
 
     def file_index_item(
-        self, column_padding, file_name, item, longest_modified_length, longest_name_length
+        self,
+        file_name,
+        item,
     ):
         return {
             "encoded_name": urllib.parse.quote(file_name),
             "name": file_name,
-            "name_padding": " ".ljust(longest_name_length - len(item["Key"]) + column_padding),
-            "modified": item["LastModified"]
-            .strftime("%d-%b-%Y %H:%M")
-            .ljust(longest_modified_length + column_padding),
+            "modified": item["LastModified"].strftime("%d-%b-%Y %H:%M"),
             "size": humanize.naturalsize(item["Size"]),
         }

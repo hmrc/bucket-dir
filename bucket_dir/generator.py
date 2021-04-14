@@ -54,7 +54,9 @@ class BucketDirGenerator:
         max_workers = 1 if single_threaded else None
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            self.logger.info(f"Running {executor._max_workers} worker threads")
+            self.logger.info(
+                f"Generating indexes for {self.s3_gateway.bucket_name} across {executor._max_workers} worker threads."
+            )
             futures = deque([])
             futures.append(
                 executor.submit(
@@ -75,16 +77,16 @@ class BucketDirGenerator:
                 )
 
             self.wait_for_all_futures_recursively(futures)
-            self.logger.info(f"Finished generation")
+            self.logger.info(f"Finished generation.")
 
     def wait_for_all_futures_recursively(self, futures):
-        self.logger.debug(f"waiting for all futures to finish")
+        self.logger.debug(f"Waiting for all futures to finish.")
         while len(futures) > 0:
             sub_futures_array = futures.popleft().result()
             futures.extend(sub_futures_array)
 
     def render_and_upload_index_document_to_s3(self, prefix, extra_excluded_items, executor=None):
-        self.logger.debug(f"Rendering index for {prefix}.")
+        self.logger.debug(f"Rendering index for prefix: '{prefix}'.")
         folder = self.s3_gateway.fetch_folder_content(prefix)
 
         futures = []
@@ -113,11 +115,11 @@ class BucketDirGenerator:
             index_document
         ).hexdigest()
         old_hash = folder.get_index_hash()
-        self.logger.info(f"{key} comparing existing hash: {old_hash} to new hash: {new_hash}")
+        self.logger.debug(f"{key} comparing existing hash: {old_hash} to new hash: {new_hash}.")
         if old_hash == new_hash:
-            self.logger.info(f"Skipping unchanged index for {key}")
+            self.logger.debug(f"Skipping unchanged index for {key}.")
         else:
-            self.logger.info(f"Uploading index for {key}")
+            self.logger.info(f"Uploading index for {key}.")
             self.s3_gateway.put_object(
                 body=index_document,
                 key=key,

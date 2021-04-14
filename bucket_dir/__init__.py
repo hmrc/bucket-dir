@@ -17,7 +17,7 @@ def configure_logging(log_level="info") -> None:
     logger = logging.getLogger("bucket_dir")
     logger.setLevel(log_level.upper())
     logger.addHandler(handler)
-    logger.debug("Logging configured")
+    logger.debug("Logging configured.")
 
 
 @click.command()
@@ -26,6 +26,12 @@ def configure_logging(log_level="info") -> None:
     "--exclude-object",
     help="Exclude objects with this name from indexes. Can be specified multiple times.",
     multiple=True,
+)
+@click.option(
+    "--log-level",
+    default="info",
+    help="Logging verbosity. Default is info.",
+    type=click.Choice(["debug", "info", "warning"], case_sensitive=False),
 )
 @click.option(
     "--single-threaded",
@@ -44,11 +50,11 @@ def configure_logging(log_level="info") -> None:
     default=None,
 )
 @click.version_option()
-def run_cli(bucket, exclude_object, single_threaded, target_path, site_name):
+def run_cli(bucket, exclude_object, log_level, single_threaded, target_path, site_name):
     """Generate directory listings for an S3 BUCKET.
 
     BUCKET is the name of the bucket to be indexed."""
-    configure_logging()
+    configure_logging(log_level=log_level)
     logger = logging.getLogger("bucket_dir")
 
     if not site_name:

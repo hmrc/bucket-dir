@@ -120,8 +120,12 @@ class BucketDirGenerator:
 
     def update_index(self, folder_dictionary, folder, excluded_objects):
         key = f"{folder.prefix}index.html"
+        old_hash = folder.get_index_hash()
         if folder.is_empty(excluded_objects):
             self.logger.debug(f"Skipping empty folder {key}.")
+            if old_hash:
+                self.logger.info(f"Deleting unneeded index {key}.")
+                self.s3_gateway.delete_object(key)
             return
 
         def is_folder_in_index(prefix):
@@ -147,7 +151,6 @@ class BucketDirGenerator:
             index_document
         ).hexdigest()
 
-        old_hash = folder.get_index_hash()
         self.logger.debug(f"{key} comparing existing hash: {old_hash} to new hash: {new_hash}.")
         if old_hash == new_hash:
             self.logger.debug(f"Skipping unchanged index for {key}.")

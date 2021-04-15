@@ -35,7 +35,13 @@ def put_object_request_callback(request, uri, response_headers):
     return [status, {}, "".encode()]
 
 
-def simulate_s3_folder(prefix, files, subdirectories, mock_upload=True):
+def simulate_s3_folder(prefix, files, subdirectories, mock_upload=True, mock_delete=False):
+    if mock_delete:
+        httpretty.register_uri(
+            httpretty.DELETE,
+            f"https://foo-bucket.s3.eu-west-1.amazonaws.com/{prefix}index.html",
+            body="",
+        )
     if mock_upload:
         httpretty.register_uri(
             httpretty.PUT,

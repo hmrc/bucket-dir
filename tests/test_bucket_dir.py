@@ -8,8 +8,16 @@ import httpretty
 import pytest
 
 import bucket_dir
-from tests.test_s3 import put_object_request_callback
 from tests.test_s3 import simulate_s3_folder
+
+
+def assert_index_deleted(path):
+    delete_requests = [
+        request
+        for request in httpretty.latest_requests()
+        if request.method == "DELETE" and request.path == f"{path}index.html"
+    ]
+    assert len(delete_requests) == 1
 
 
 def assert_index_created_correctly(
@@ -522,6 +530,48 @@ def test_generate_bucket_dir_does_not_list_empty_folders(aws_creds):
         path="/folder-we-like/",
         site_name="foo-bucket",
     )
+
+
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+        "--single-threaded",
+    ],
+)
+@httpretty.activate(allow_net_connect=False)
+def test_generate_bucket_deletes_old_index_files(aws_creds):
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=["folder-that-is-basically-empty/"],
+        files=[{"name": "foo.html"}],
+    )
+    simulate_s3_folder(
+        prefix="folder-that-is-basically-empty/",
+        subdirectories=[],
+        files=[{"name": "index.html"}],
+        mock_upload=False,
+        mock_delete=True,
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 0
+
+    assert_index_created_correctly(
+        items=[
+            {
+                "name": "foo.html",
+                "last_modified": "22-Feb-2021 10:23",
+                "size": "1.2 kB",
+            },
+        ],
+        path="/",
+        site_name="foo-bucket",
+        root_index=True,
+    )
+    assert_index_deleted(path="/folder-that-is-basically-empty/")
 
 
 @mock.patch.object(

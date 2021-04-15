@@ -32,3 +32,9 @@ class S3:
             ContentType="text/html",
             Key=key,
         )
+
+    def delete_object(self, key):
+        self.s3_client.delete_object(
+            Bucket=self.bucket_name,
+            Key=key,
+        )

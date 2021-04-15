@@ -1,18 +1,7 @@
 # -*- coding: utf-8 -*-
 import boto3
 
-
-class Folder:
-    def __init__(self, prefix, files, subdirectories):
-        self.prefix = prefix
-        self.files = files
-        self.subdirectories = subdirectories
-
-    def get_index_hash(self):
-        for file in self.files:
-            if file["Key"] == f"{self.prefix}index.html":
-                return file["ETag"].replace('"', "")
-        return None
+from .folder import Folder
 
 
 class S3:

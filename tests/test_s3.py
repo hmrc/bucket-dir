@@ -3,26 +3,7 @@ import urllib
 
 import httpretty
 
-from bucket_dir.s3 import Folder
 from bucket_dir.s3 import S3
-
-
-def test_folder_object():
-    folder = Folder("foo", subdirectories=["foo/bar", "foo/baz"], files=[{"Key": "foo/myfile.jar"}])
-
-    assert folder.prefix == "foo"
-    assert folder.subdirectories == ["foo/bar", "foo/baz"]
-    assert folder.files == [{"Key": "foo/myfile.jar"}]
-
-
-def test_get_index_hash():
-    folder = Folder(
-        "foo/",
-        subdirectories=["foo/bar", "foo/baz"],
-        files=[{"Key": "foo/myfile.jar"}, {"Key": "foo/index.html", "ETag": '"12345"'}],
-    )
-
-    assert folder.get_index_hash() == "12345"
 
 
 @httpretty.activate(allow_net_connect=False)

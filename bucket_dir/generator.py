@@ -43,13 +43,17 @@ class BucketDirGenerator:
         paths.reverse()
         return paths
 
-    def generate(self, exclude_objects=None, single_threaded=False, target_path=""):
+    def generate(self, extra_exclude_objects=None, single_threaded=False, target_path=""):
         if target_path.startswith("/"):
             target_path = target_path[1:]
 
         if not target_path.endswith("/"):
             last_slash = target_path.rfind("/")
             target_path = target_path[: last_slash + 1]
+
+        excluded_objects = ["favicon.ico", "index.html"]
+        if extra_exclude_objects:
+            excluded_objects.extend(extra_exclude_objects)
 
         max_workers = 1 if single_threaded else None
 
@@ -64,7 +68,7 @@ class BucketDirGenerator:
             self.wait_for_all_futures_recursively(futures)
 
             for prefix, folder in folder_dictionary.items():
-                futures.append(executor.submit(self.update_index, prefix, folder, exclude_objects))
+                futures.append(executor.submit(self.update_index, prefix, folder, excluded_objects))
 
             self.wait_for_all_futures(futures)
 
@@ -112,14 +116,17 @@ class BucketDirGenerator:
 
         return futures
 
-    def update_index(self, prefix, folder, extra_excluded_items):
-        index = Index(prefix, extra_excluded_items)
-        index.items.extend(folder.files)
-        index.folders.extend(folder.subdirectories)
+    def update_index(self, prefix, folder, excluded_objects):
+        key = f"{prefix}index.html"
+        if folder.is_empty(excluded_objects):
+            self.logger.debug(f"Skipping empty folder {key}.")
+            return
+
+        index = Index(prefix, folder.files, folder.subdirectories, excluded_objects)
         index_document = index.render(
             site_name=self.site_name, template_environment=self.template_environment
         ).encode("utf-8")
-        key = f"{prefix}index.html"
+
         new_hash = hashlib.md5(  # nosec # skip bandit check as this is not used for encryption
             index_document
         ).hexdigest()

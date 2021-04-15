@@ -5,13 +5,11 @@ import humanize
 
 
 class Index:
-    def __init__(self, path, extra_excluded_items=None):
+    def __init__(self, path, files, subdirectories, excluded_items=None):
         self.path = path
-        self.items = []
-        self.folders = []
-        self.excluded_items = ["favicon.ico", "index.html"]
-        if extra_excluded_items:
-            self.excluded_items.extend(extra_excluded_items)
+        self.files = files
+        self.subdirectories = subdirectories
+        self.excluded_items = excluded_items if excluded_items else []
 
     def should_exclude(self, file_name):
         return file_name in self.excluded_items
@@ -20,7 +18,7 @@ class Index:
         template = template_environment.get_template("index.html.j2")
 
         index_items = []
-        for item in self.items:
+        for item in self.files:
             file_name = item["Key"].split("/")[-1]
 
             if self.should_exclude(file_name):
@@ -28,11 +26,10 @@ class Index:
 
             index_items.append(self.file_index_item(file_name, item))
 
-        for folder in self.folders:
+        for folder in self.subdirectories:
             folder_name = folder.split("/")[-2] + "/"
             index_items.append(
                 self.folder_index_item(
-                    folder,
                     folder_name,
                 )
             )
@@ -43,7 +40,7 @@ class Index:
             not_root=self.path != "",
         )
 
-    def folder_index_item(self, folder, folder_name):
+    def folder_index_item(self, folder_name):
         return {
             "encoded_name": urllib.parse.quote(folder_name),
             "name": folder_name,

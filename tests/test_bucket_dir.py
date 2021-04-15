@@ -143,7 +143,7 @@ def test_generate_bucket_dir(aws_creds):
         prefix="empty-folder/",
         subdirectories=[],
         files=[],
-        # mock_upload=False,
+        mock_upload=False,
     )
     # simulate_s3_folder(
     #     prefix="empty-folder-with-index/",

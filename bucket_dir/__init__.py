@@ -65,7 +65,7 @@ def run_cli(bucket, exclude_object, log_level, single_threaded, target_path, sit
     )
     try:
         bucket_dir_generator.generate(
-            exclude_objects=list(exclude_object),
+            extra_exclude_objects=list(exclude_object),
             single_threaded=single_threaded,
             target_path=target_path,
         )

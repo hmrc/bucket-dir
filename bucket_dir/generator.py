@@ -67,8 +67,10 @@ class BucketDirGenerator:
 
             self.wait_for_all_futures_recursively(futures)
 
-            for prefix, folder in folder_dictionary.items():
-                futures.append(executor.submit(self.update_index, prefix, folder, excluded_objects))
+            for folder in folder_dictionary.values():
+                futures.append(
+                    executor.submit(self.update_index, folder_dictionary, folder, excluded_objects)
+                )
 
             self.wait_for_all_futures(futures)
 
@@ -116,20 +118,35 @@ class BucketDirGenerator:
 
         return futures
 
-    def update_index(self, prefix, folder, excluded_objects):
-        key = f"{prefix}index.html"
+    def update_index(self, folder_dictionary, folder, excluded_objects):
+        key = f"{folder.prefix}index.html"
         if folder.is_empty(excluded_objects):
             self.logger.debug(f"Skipping empty folder {key}.")
             return
 
-        index = Index(prefix, folder.files, folder.subdirectories, excluded_objects)
-        index_document = index.render(
-            site_name=self.site_name, template_environment=self.template_environment
-        ).encode("utf-8")
+        def is_folder_in_index(prefix):
+            if folder_dictionary.get(prefix):
+                is_empty = folder_dictionary[prefix].is_empty(excluded_objects)
+                return not is_empty
+            else:
+                return True
 
+        non_empty_subdirectories = list(
+            filter(
+                is_folder_in_index,
+                folder.subdirectories,
+            )
+        )
+
+        index_document = (
+            Index(folder.prefix, folder.files, non_empty_subdirectories, excluded_objects)
+            .render(site_name=self.site_name, template_environment=self.template_environment)
+            .encode("utf-8")
+        )
         new_hash = hashlib.md5(  # nosec # skip bandit check as this is not used for encryption
             index_document
         ).hexdigest()
+
         old_hash = folder.get_index_hash()
         self.logger.debug(f"{key} comparing existing hash: {old_hash} to new hash: {new_hash}.")
         if old_hash == new_hash:

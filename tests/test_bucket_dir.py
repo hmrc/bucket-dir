@@ -217,7 +217,6 @@ def test_generate_bucket_dir(aws_creds):
     assert_index_created_correctly(
         items=[
             {"name": "deep-folder/", "last_modified": "-", "size": "-"},
-            {"name": "empty-folder/", "last_modified": "-", "size": "-"},
             {
                 "name": "folder with spaces/",
                 "last_modified": "-",
@@ -465,6 +464,63 @@ def test_generate_bucket_dir_with_excluded_objects(aws_creds):
         path="/",
         site_name="foo-bucket",
         root_index=True,
+    )
+
+
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+        "--exclude-object",
+        "excluded-object.zip",
+        "--single-threaded",
+    ],
+)
+@httpretty.activate(allow_net_connect=False)
+def test_generate_bucket_dir_does_not_list_empty_folders(aws_creds):
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=["folder-with-only-excluded/", "folder-we-like/"],
+        files=[],
+    )
+    simulate_s3_folder(
+        prefix="folder-with-only-excluded/",
+        subdirectories=[],
+        files=[{"name": "excluded-object.zip"}],
+        mock_upload=False,
+    )
+    simulate_s3_folder(
+        prefix="folder-we-like/",
+        subdirectories=[],
+        files=[{"name": "the-not-excluded-thing"}, {"name": "excluded-object.zip"}],
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 0
+    assert_index_created_correctly(
+        items=[
+            {
+                "name": "folder-we-like/",
+                "last_modified": "-",
+                "size": "-",
+            },
+        ],
+        path="/",
+        site_name="foo-bucket",
+        root_index=True,
+    )
+    assert_index_created_correctly(
+        items=[
+            {
+                "name": "the-not-excluded-thing",
+                "last_modified": "22-Feb-2021 10:23",
+                "size": "1.2 kB",
+            },
+        ],
+        path="/folder-we-like/",
+        site_name="foo-bucket",
     )
 
 

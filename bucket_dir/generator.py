@@ -57,27 +57,35 @@ class BucketDirGenerator:
             self.logger.info(
                 f"Generating indexes for {self.s3_gateway.bucket_name} across {executor._max_workers} worker threads."
             )
+            folder_dictionary = {}
             futures = deque([])
-            futures.append(
-                executor.submit(
-                    self.render_and_upload_index_document_to_s3,
-                    target_path,
-                    exclude_objects,
-                    executor,
-                )
-            )
-
-            for prefix in self.generate_ascending_prefixes(target_path):
-                futures.append(
-                    executor.submit(
-                        self.render_and_upload_index_document_to_s3,
-                        prefix,
-                        exclude_objects,
-                    )
-                )
+            self.enqueue_folder_discovery(executor, folder_dictionary, futures, target_path)
 
             self.wait_for_all_futures_recursively(futures)
-            self.logger.info(f"Finished generation.")
+
+            for prefix, folder in folder_dictionary.items():
+                futures.append(executor.submit(self.update_index, prefix, folder, exclude_objects))
+
+            self.wait_for_all_futures(futures)
+
+        self.logger.info(f"Finished generation.")
+
+    def enqueue_folder_discovery(self, executor, folder_dictionary, futures, target_path):
+        futures.append(
+            executor.submit(
+                self.discover_folder,
+                folder_dictionary,
+                target_path,
+                executor,
+            )
+        )
+        for prefix in self.generate_ascending_prefixes(target_path):
+            futures.append(executor.submit(self.discover_folder, folder_dictionary, prefix))
+
+    def wait_for_all_futures(self, futures):
+        self.logger.debug(f"Waiting for all futures to finish.")
+        while len(futures) > 0:
+            futures.popleft().result()
 
     def wait_for_all_futures_recursively(self, futures):
         self.logger.debug(f"Waiting for all futures to finish.")
@@ -85,32 +93,33 @@ class BucketDirGenerator:
             sub_futures_array = futures.popleft().result()
             futures.extend(sub_futures_array)
 
-    def render_and_upload_index_document_to_s3(self, prefix, extra_excluded_items, executor=None):
+    def discover_folder(self, folder_dictionary, prefix, executor=None):
         self.logger.debug(f"Rendering index for prefix: '{prefix}'.")
         folder = self.s3_gateway.fetch_folder_content(prefix)
+        folder_dictionary[prefix] = folder
 
         futures = []
         if executor is not None:
             for subdirectory in folder.subdirectories:
                 futures.append(
                     executor.submit(
-                        self.render_and_upload_index_document_to_s3,
+                        self.discover_folder,
+                        folder_dictionary,
                         subdirectory,
-                        extra_excluded_items,
                         executor,
                     )
                 )
 
+        return futures
+
+    def update_index(self, prefix, folder, extra_excluded_items):
         index = Index(prefix, extra_excluded_items)
         index.items.extend(folder.files)
         index.folders.extend(folder.subdirectories)
-
         index_document = index.render(
             site_name=self.site_name, template_environment=self.template_environment
         ).encode("utf-8")
-
         key = f"{prefix}index.html"
-
         new_hash = hashlib.md5(  # nosec # skip bandit check as this is not used for encryption
             index_document
         ).hexdigest()
@@ -124,5 +133,3 @@ class BucketDirGenerator:
                 body=index_document,
                 key=key,
             )
-
-        return futures

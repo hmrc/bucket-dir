@@ -143,7 +143,14 @@ def test_generate_bucket_dir(aws_creds):
         prefix="empty-folder/",
         subdirectories=[],
         files=[],
+        # mock_upload=False,
     )
+    # simulate_s3_folder(
+    #     prefix="empty-folder-with-index/",
+    #     subdirectories=[],
+    #     files=[{"name": "index.html", "etag": "164b668c016a3b64086d3326850209b9"}],
+    #     mock_upload=False,
+    # )
     simulate_s3_folder(
         prefix="folder with spaces/", subdirectories=[], files=[{"name": "an+object+with+spaces"}]
     )
@@ -157,13 +164,6 @@ def test_generate_bucket_dir(aws_creds):
                 "size": 16524288,
             },
             {"name": "object-two.bar", "last_modified": "2021-02-22T10:23:11.000Z", "size": 26921},
-        ],
-    )
-    simulate_s3_folder(
-        prefix="folder+with+spaces/",
-        subdirectories=[],
-        files=[
-            {"name": "an+object+with+spaces"},
         ],
     )
     simulate_s3_folder(
@@ -254,11 +254,6 @@ def test_generate_bucket_dir(aws_creds):
     assert_index_created_correctly(
         items=[{"name": "iii/", "last_modified": "-", "size": "-"}],
         path="/deep-folder/i/ii/",
-        site_name="foo-bucket",
-    )
-    assert_index_created_correctly(
-        items=[],
-        path="/empty-folder/",
         site_name="foo-bucket",
     )
     assert_index_created_correctly(

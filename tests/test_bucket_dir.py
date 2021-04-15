@@ -68,7 +68,7 @@ def simulate_s3_big_bucket():
 
     big_folder_1_prefixes = []
     big_folder_2_prefixes = []
-    for n in range(100):
+    for n in range(500):
         key1 = f"big-folder-1/{n}/"
         key2 = f"big-folder-2/{n}/"
         big_folder_1_prefixes.append(key1)

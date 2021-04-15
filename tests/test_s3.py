@@ -3,7 +3,7 @@ import urllib
 
 import httpretty
 
-from bucket_dir.s3 import S3
+from bucket_dir.s3_gateway import S3Gateway
 
 
 @httpretty.activate(allow_net_connect=False)
@@ -16,7 +16,7 @@ def test_fetch_folder_content(aws_creds):
             "/foo/baz/",
         ],
     )
-    s3 = S3(bucket_name="foo-bucket")
+    s3 = S3Gateway(bucket_name="foo-bucket")
     folder = s3.fetch_folder_content(folder_key="foo/")
 
     assert len(httpretty.latest_requests()) == 2

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import concurrent
 import hashlib
 import logging
 from collections import deque
@@ -10,7 +11,7 @@ from jinja2 import PackageLoader
 from jinja2 import select_autoescape
 
 from .index import Index
-from .s3 import S3
+from .s3_gateway import S3Gateway
 
 
 class BucketDirGenerator:
@@ -28,7 +29,7 @@ class BucketDirGenerator:
             lstrip_blocks=True,
         )
         self.site_name = site_name
-        self.s3_gateway = S3(bucket_name=bucket_name)
+        self.s3_gateway = S3Gateway(bucket_name=bucket_name, logger=self.logger)
 
     @staticmethod
     def generate_ascending_prefixes(directory_key):
@@ -61,9 +62,7 @@ class BucketDirGenerator:
             self.logger.info(
                 f"Generating indexes for {self.s3_gateway.bucket_name} across {executor._max_workers} worker threads."
             )
-            folder_dictionary = {}
-            futures = deque([])
-            self.enqueue_folder_discovery(executor, folder_dictionary, futures, target_path)
+            folder_dictionary, futures = self.enqueue_folder_discovery(executor, target_path)
 
             self.wait_for_all_futures_recursively(futures)
 
@@ -71,12 +70,13 @@ class BucketDirGenerator:
                 futures.append(
                     executor.submit(self.update_index, folder_dictionary, folder, excluded_objects)
                 )
-
-            self.wait_for_all_futures(futures)
+            concurrent.futures.as_completed(futures)
 
         self.logger.info(f"Finished generation.")
 
-    def enqueue_folder_discovery(self, executor, folder_dictionary, futures, target_path):
+    def enqueue_folder_discovery(self, executor, target_path):
+        folder_dictionary = {}
+        futures = deque([])
         futures.append(
             executor.submit(
                 self.discover_folder,
@@ -88,10 +88,7 @@ class BucketDirGenerator:
         for prefix in self.generate_ascending_prefixes(target_path):
             futures.append(executor.submit(self.discover_folder, folder_dictionary, prefix))
 
-    def wait_for_all_futures(self, futures):
-        self.logger.debug(f"Waiting for all futures to finish.")
-        while len(futures) > 0:
-            futures.popleft().result()
+        return folder_dictionary, futures
 
     def wait_for_all_futures_recursively(self, futures):
         self.logger.debug(f"Waiting for all futures to finish.")
@@ -124,7 +121,6 @@ class BucketDirGenerator:
         if folder.is_empty(excluded_objects):
             self.logger.debug(f"Skipping empty folder {key}.")
             if old_hash:
-                self.logger.info(f"Deleting unneeded index {key}.")
                 self.s3_gateway.delete_object(key)
             return
 
@@ -155,7 +151,6 @@ class BucketDirGenerator:
         if old_hash == new_hash:
             self.logger.debug(f"Skipping unchanged index for {key}.")
         else:
-            self.logger.info(f"Uploading index for {key}.")
             self.s3_gateway.put_object(
                 body=index_document,
                 key=key,

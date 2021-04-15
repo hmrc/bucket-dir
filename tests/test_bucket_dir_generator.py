@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from bucket_dir import BucketDirGenerator
-from bucket_dir.s3 import Folder
 
 
 def test_generate_ascending_prefixes():

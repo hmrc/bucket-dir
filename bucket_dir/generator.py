@@ -70,7 +70,9 @@ class BucketDirGenerator:
                 futures.append(
                     executor.submit(self.update_index, folder_dictionary, folder, excluded_objects)
                 )
-            concurrent.futures.as_completed(futures)
+            for future in concurrent.futures.as_completed(futures):
+                if future.exception() is not None:
+                    raise future.exception()
 
         self.logger.info(f"Finished generation.")
 
@@ -151,6 +153,7 @@ class BucketDirGenerator:
         if old_hash == new_hash:
             self.logger.debug(f"Skipping unchanged index for {key}.")
         else:
+
             self.s3_gateway.put_object(
                 body=index_document,
                 key=key,

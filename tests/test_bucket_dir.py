@@ -108,9 +108,8 @@ def simulate_s3_big_bucket():
 
 
 @mock.patch.object(sys, "argv", ["bucket-dir", "foo-bucket"])
+@httpretty.activate(allow_net_connect=False)
 def test_generate_bucket_dir_no_creds(delete_aws_creds):
-    httpretty.enable(allow_net_connect=False)
-    httpretty.reset()
     httpretty.register_uri(
         httpretty.PUT,
         "http://169.254.169.254/latest/api/token",
@@ -153,12 +152,6 @@ def test_generate_bucket_dir(aws_creds):
         files=[],
         mock_upload=False,
     )
-    # simulate_s3_folder(
-    #     prefix="empty-folder-with-index/",
-    #     subdirectories=[],
-    #     files=[{"name": "index.html", "etag": "164b668c016a3b64086d3326850209b9"}],
-    #     mock_upload=False,
-    # )
     simulate_s3_folder(
         prefix="folder with spaces/", subdirectories=[], files=[{"name": "an+object+with+spaces"}]
     )
@@ -681,6 +674,116 @@ def test_generate_bucket_dir_multithreaded_smoke(aws_creds):
     with pytest.raises(SystemExit) as system_exit:
         bucket_dir.run_cli()
     assert system_exit.value.code == 0
+
+
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+    ],
+)
+@httpretty.activate(allow_net_connect=False)
+def test_generate_bucket_dir_multithreaded_no_list_permissions(aws_creds, caplog):
+    httpretty.register_uri(
+        httpretty.GET,
+        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&delimiter=%2F&prefix=&encoding-type=url",
+        status=403,
+        body="""<?xml version="1.0" encoding="UTF-8"?>
+        <Error>
+            <Code>AccessDenied</Code>
+            <Message>Access Denied</Message>
+            <RequestId>foo-request-id</RequestId>
+            <HostId>foo-host-id</HostId>
+        </Error>""",
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 1
+    assert (
+        "Access denied when making a ListObjectsV2 call. Please ensure appropriate AWS permissions are set."
+        in caplog.messages
+    )
+
+
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+    ],
+)
+@httpretty.activate(allow_net_connect=False)
+def test_generate_bucket_dir_multithreaded_unhandled_client_error(aws_creds, caplog):
+    httpretty.register_uri(
+        httpretty.GET,
+        "https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&delimiter=%2F&prefix=&encoding-type=url",
+        status=403,
+        body="""<?xml version="1.0" encoding="UTF-8"?>
+        <Error>
+            <Code>WeirdError</Code>
+            <Message>Something funky happened</Message>
+            <RequestId>foo-request-id</RequestId>
+            <HostId>foo-host-id</HostId>
+        </Error>""",
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 1
+    assert (
+        "An unhandled ClientError occured when interacting with AWS: 'An error occurred (WeirdError) when calling the ListObjectsV2 operation: Something funky happened'."
+        in caplog.messages
+    )
+
+
+@mock.patch.object(
+    sys,
+    "argv",
+    [
+        "bucket-dir",
+        "foo-bucket",
+    ],
+)
+@httpretty.activate(allow_net_connect=False)
+def test_generate_bucket_dir_multithreaded_no_put_permissions(aws_creds, caplog):
+
+    # This is a workaround for https://github.com/gabrielfalcao/HTTPretty/issues/416
+    def put_object_failed_request_callback(request, uri, response_headers):
+        status = 100
+        body = ""
+        if len(request.body) > 0:
+            status = 403
+            body = """<?xml version="1.0" encoding="UTF-8"?>
+            <Error>
+                <Code>AccessDenied</Code>
+                <Message>Access Denied</Message>
+                <RequestId>GEW5C7J1JCY4GVPC</RequestId>
+                <HostId>NaxEi4Nqz+XdWRxTZf0ww+oHsNl11xyauaaJaIy6SUhhF8waL4B/5vxRDGEWwcCQPW6UIb0yuHk=</HostId>
+            </Error>"""
+        return [status, {}, body.encode()]
+
+    simulate_s3_folder(
+        prefix="",
+        subdirectories=[],
+        files=[
+            {"name": "an-object", "last_modified": "22-Feb-2021 10:23", "size": "30100"},
+        ],
+        mock_upload=False,
+    )
+    httpretty.register_uri(
+        httpretty.PUT,
+        "https://foo-bucket.s3.eu-west-1.amazonaws.com/index.html",
+        body=put_object_failed_request_callback,
+    )
+    with pytest.raises(SystemExit) as system_exit:
+        bucket_dir.run_cli()
+    assert system_exit.value.code == 1
+    assert (
+        "Access denied when making a PutObject call. Please ensure appropriate AWS permissions are set."
+        in caplog.messages
+    )
 
 
 @pytest.mark.skipif(

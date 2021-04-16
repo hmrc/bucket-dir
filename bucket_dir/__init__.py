@@ -69,8 +69,16 @@ def run_cli(bucket, exclude_object, log_level, single_threaded, target_path, sit
             single_threaded=single_threaded,
             target_path=target_path,
         )
+    except botocore.exceptions.ClientError as error:
+        if error.response["Error"]["Code"] == "AccessDenied":
+            logger.error(
+                f"Access denied when making a {error.operation_name} call. Please ensure appropriate AWS permissions are set."
+            )
+        else:
+            logger.error(f"An unhandled ClientError occured when interacting with AWS: '{error}'.")
+        sys.exit(1)
     except botocore.exceptions.NoCredentialsError:
         logger.error(
-            "Could not discover any AWS credentials. Please supply appropriate credentials."
+            "Could not discover any AWS credentials. Please supply appropriate AWS credentials."
         )
         sys.exit(1)

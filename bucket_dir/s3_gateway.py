@@ -29,6 +29,7 @@ class S3Gateway:
         return Folder(prefix=folder_key, subdirectories=subdirectories, files=files)
 
     def put_object(self, body, key):
+        boto3.set_stream_logger(name="botocore")
         self.logger.info(f"Uploading index for '{key}'.")
         self.s3_client.put_object(
             Body=body,

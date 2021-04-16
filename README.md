@@ -63,15 +63,23 @@ This example demonstrates the most restrictive policy you can apply to the princ
         },
         {
             "Effect": "Allow",
-            "Action": "s3:PutObject",
-            "Resource": "arn:aws:s3:::foo-bucket/*"
+            "Action": [
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::foo-bucket/index.html",
+                "arn:aws:s3:::foo-bucket/*/index.html"
+            ]
         }
     ]
 }
 ```
 
 * `s3:ListBucket` is required for `bucket-dir` to be able to map out the folders and objects that the bucket contains.
-* `s3:PutObject` is required for `bucket-dir` to be able to upload the generated `index.html` documents.
+* `s3:PutObject` is required for `bucket-dir` to be able to upload generated `index.html` documents.
+* `s3:DeleteObject` is required for `bucket-dir` to be able to remove redundant `index.html` documents.
+
 
 ### Example AWS configuration
 

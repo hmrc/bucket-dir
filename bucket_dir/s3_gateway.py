@@ -10,6 +10,7 @@ class S3Gateway:
     def __init__(self, bucket_name, logger=None):
         self.logger = logger or logging.getLogger("bucket_dir")
         self.s3_client = boto3.client("s3")
+        boto3.set_stream_logger(name="botocore", level=self.logger.level)
         self.bucket_name = bucket_name
 
     def fetch_folder_content(self, folder_key):
@@ -29,7 +30,6 @@ class S3Gateway:
         return Folder(prefix=folder_key, subdirectories=subdirectories, files=files)
 
     def put_object(self, body, key):
-        boto3.set_stream_logger(name="botocore")
         self.logger.info(f"Uploading index for '{key}'.")
         self.s3_client.put_object(
             Body=body,

@@ -34,7 +34,7 @@ class S3Gateway:
         self.s3_client.put_object(
             Body=body,
             Bucket=self.bucket_name,
-            CacheControl="max-age=0",
+            CacheControl="max-age=5",
             ContentType="text/html",
             Key=key,
         )

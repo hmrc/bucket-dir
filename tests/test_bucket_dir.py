@@ -750,6 +750,7 @@ def test_generate_bucket_dir_multithreaded_unhandled_client_error(aws_creds, cap
 def test_generate_bucket_dir_multithreaded_no_put_permissions(aws_creds, caplog):
 
     # This is a workaround for https://github.com/gabrielfalcao/HTTPretty/issues/416
+    # TODO: The above has now been marked as resolved so this could potentially be refactored to align it better with actual behaviours of the S3 API
     def put_object_failed_request_callback(request, uri, response_headers):
         status = 100
         body = ""

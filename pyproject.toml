@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bucket-dir"
-version = "3.1.1"
+version = "3.2.0"
 description = "Generate directory listings for S3 statically hosted content."
 authors = ["Dave Randall <19395688+daveygit2050@users.noreply.github.com>"]
 license = "Apache-2.0"
@@ -9,22 +9,22 @@ repository = "https://github.com/hmrc/bucket-dir"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-boto3 = "^1.17.11"
-humanize = "^3.2.0"
-Jinja2 = "^2.11.3"
-click = "^7.1.2"
+boto3 = "*"
+humanize = "*"
+Jinja2 = "*"
+click = "*"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.2"
-pytest-cov = "^2.11.1"
-black = "^20.8b1"
-httpretty = "^1.0.5"
-safety = "^1.10.3"
-bandit = "^1.7.0"
-pre-commit = "^2.10.1"
-pytest-mock = "^3.5.1"
-pytest-profiling = "^1.7.0"
-gprof2dot = "^2021.2.21"
+pytest = "*"
+pytest-cov = "*"
+black = "*"
+httpretty = "1.0.5" # Pinned due to https://github.com/gabrielfalcao/HTTPretty/issues/425
+safety = "*"
+bandit = "*"
+pre-commit = "*"
+pytest-mock = "*"
+pytest-profiling = "*"
+gprof2dot = "*"
 
 [tool.poetry.scripts]
 bucket-dir = 'bucket_dir:run_cli'

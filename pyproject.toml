@@ -10,7 +10,7 @@ repository = "https://github.com/hmrc/bucket-dir"
 [[tool.poetry.source]]
 name = "artifactory"
 url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
-secondary = false
+priority = 'primary'
 
 [tool.poetry.dependencies]
 python = "^3.7"

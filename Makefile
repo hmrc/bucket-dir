@@ -12,7 +12,7 @@ build: test safety bandit
 
 .PHONY: init
 init:
-	pip install -i https://artefacts.tax.service.gov.uk/artifactory --upgrade poetry
+	pip install -i https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple --upgrade poetry
 	poetry install
 	poetry run pre-commit install
 

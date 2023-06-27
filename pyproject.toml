@@ -5,7 +5,7 @@ priority = "default"
 
 [tool.poetry]
 name = "bucket-dir"
-version = "3.2.0"
+version = "3.2.1"
 description = "Generate directory listings for S3 statically hosted content."
 authors = ["Dave Randall <19395688+daveygit2050@users.noreply.github.com>"]
 license = "Apache-2.0"

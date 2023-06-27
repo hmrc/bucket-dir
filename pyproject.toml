@@ -1,3 +1,8 @@
+[[tool.poetry.source]]
+name = "artifactory"
+url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
+priority = "default"
+
 [tool.poetry]
 name = "bucket-dir"
 version = "3.2.0"

@@ -14,7 +14,6 @@ build: test safety bandit
 init:
 	pip install --upgrade poetry
 	poetry install
-	poetry run pre-commit install
 
 .PHONY: profile
 profile:

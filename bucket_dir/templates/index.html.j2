@@ -24,14 +24,14 @@
     <th>Size</th>
 </tr>
 {% if not_root %}<tr>
-    <td><a href="../" class="parent_link">../</a></td>
+    <td><a href="../index.html" class="parent_link">../</a></td>
     <td></td>
     <td></td>
 </tr>
 {% endif %}
 {% for index_item in index_items %}
 <tr>
-    <td><a href="{{ index_item.encoded_name }}" class="item_link">{{ index_item.name }}</a></td>
+    <td><a href="{{ index_item.encoded_name }}{% if index_item.name.endswith('/') %}index.html{% endif %}" class="item_link">{{ index_item.name }}</a></td>
     <td>{{ index_item.modified }}</td>
     <td>{{ index_item.size }}</td>
 </tr>

@@ -1,7 +1,7 @@
 [[tool.poetry.source]]
 name = "artifactory"
 url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
-priority = "default"
+priority = "primary"
 
 [tool.poetry]
 name = "bucket-dir"
@@ -13,13 +13,14 @@ readme = "README.md"
 repository = "https://github.com/hmrc/bucket-dir"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.11"
 boto3 = "*"
 humanize = "*"
 Jinja2 = "*"
 click = "*"
+urllib3 = "2.2.3"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-cov = "*"
 black = "*"

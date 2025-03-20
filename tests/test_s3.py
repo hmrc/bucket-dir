@@ -2,13 +2,14 @@
 import urllib
 
 import httpretty
+import re
 
 from bucket_dir.s3_gateway import S3Gateway
 
 
 @httpretty.activate(allow_net_connect=False)
 def test_fetch_folder_content(aws_creds):
-    simulate_s3_folder(
+    s3_simulator().simulate_s3_folder(
         prefix="foo/",
         files=[{"name": "index.html"}, {"name": "otherfile.jar"}],
         subdirectories=[
@@ -28,71 +29,123 @@ def test_fetch_folder_content(aws_creds):
     assert folder.files[1]["Key"] == "foo/otherfile.jar"
 
 
-def put_object_request_callback(request, uri, response_headers):
-    status = 100
-    if len(request.body) > 0:
-        status = 200
-    return [status, {}, "".encode()]
+class s3_simulator:
+    def __init__(self):
+        self.received_put_requests = []
 
+    def put_object_request_callback(self, request, uri, response_headers):
+        status = 100
+        if len(request.body) > 0:
+            status = 200
+            self.received_put_requests.append(
+                request
+            )  # Required to be here as httpretty appears to overwrite requests with 0 body
 
-def simulate_s3_folder(prefix, files, subdirectories, mock_upload=True, mock_delete=False):
-    if mock_delete:
+        return [status, {}, "".encode()]
+
+    def simulate_s3_folder(
+        self, prefix, files, subdirectories, mock_upload=True, mock_delete=False
+    ):
+        if mock_delete:
+            httpretty.register_uri(
+                httpretty.DELETE,
+                f"https://foo-bucket.s3.eu-west-1.amazonaws.com/{prefix}index.html",
+                body="",
+            )
+        if mock_upload:
+            httpretty.register_uri(
+                httpretty.PUT,
+                f"https://foo-bucket.s3.eu-west-1.amazonaws.com/{prefix}index.html",
+                body=self.put_object_request_callback,
+            )
+
+        url_prefix = urllib.parse.quote_plus(prefix)
+
+        contents = ""
+        for file in files:
+            contents += f"""<Contents>
+                                <Key>{prefix}{file["name"]}</Key>
+                                <LastModified>{file.get("last_modified", "22-Feb-2021 10:23")}</LastModified>
+                                <ETag>&quot;{file.get("etag", "fakeETag")}&quot;</ETag>
+                                <Size>{file.get("size", "1234")}</Size>
+                                <StorageClass>STANDARD</StorageClass>
+                            </Contents>"""
+
+        commonprefixes = ""
+        for folders in subdirectories:
+            commonprefixes += f"<CommonPrefixes><Prefix>{folders}</Prefix></CommonPrefixes>"
+
         httpretty.register_uri(
-            httpretty.DELETE,
-            f"https://foo-bucket.s3.eu-west-1.amazonaws.com/{prefix}index.html",
-            body="",
+            httpretty.GET,
+            f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&encoding-type=url",
+            match_querystring=True,
+            body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+        <Name>foo-bucket</Name>
+        <Prefix>{url_prefix}</Prefix>
+        <NextContinuationToken>foo-continuation-token</NextContinuationToken>
+        <KeyCount>{len(contents)}</KeyCount>
+        <MaxKeys>{len(contents)}</MaxKeys>
+        <Delimiter>{urllib.parse.quote_plus("/")}</Delimiter>
+        <EncodingType>url</EncodingType>
+        <IsTruncated>true</IsTruncated>
+        </ListBucketResult>""",
         )
-    if mock_upload:
         httpretty.register_uri(
-            httpretty.PUT,
-            f"https://foo-bucket.s3.eu-west-1.amazonaws.com/{prefix}index.html",
-            body=put_object_request_callback,
-        )
-
-    url_prefix = urllib.parse.quote_plus(prefix)
-
-    contents = ""
-    for file in files:
-        contents += f"""<Contents>
-                            <Key>{prefix}{file["name"]}</Key>
-                            <LastModified>{file.get("last_modified", "22-Feb-2021 10:23")}</LastModified>
-                            <ETag>&quot;{file.get("etag", "fakeETag")}&quot;</ETag>
-                            <Size>{file.get("size", "1234")}</Size>
-                            <StorageClass>STANDARD</StorageClass>
-                        </Contents>"""
-
-    commonprefixes = ""
-    for folders in subdirectories:
-        commonprefixes += f"<CommonPrefixes><Prefix>{folders}</Prefix></CommonPrefixes>"
-
-    httpretty.register_uri(
-        httpretty.GET,
-        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&encoding-type=url",
-        match_querystring=True,
-        body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-    <Name>foo-bucket</Name>
-    <Prefix>{url_prefix}</Prefix>
-    <NextContinuationToken>foo-continuation-token</NextContinuationToken>
-    <KeyCount>{len(contents)}</KeyCount>
-    <MaxKeys>{len(contents)}</MaxKeys>
-    <Delimiter>{urllib.parse.quote_plus("/")}</Delimiter>
-    <EncodingType>url</EncodingType>
-    <IsTruncated>true</IsTruncated>
+            httpretty.GET,
+            f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&continuation-token=foo-continuation-token&encoding-type=url",
+            match_querystring=True,
+            body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+        <Name>foo-bucket</Name>
+        <Prefix></Prefix>
+        <KeyCount>{len(contents)}</KeyCount>
+        <MaxKeys>{len(contents)}</MaxKeys>
+        <Delimiter>/</Delimiter>
+        <EncodingType>url</EncodingType>
+        <IsTruncated>false</IsTruncated>
+        {contents}
+        {commonprefixes}
     </ListBucketResult>""",
-    )
-    httpretty.register_uri(
-        httpretty.GET,
-        f"https://foo-bucket.s3.eu-west-1.amazonaws.com/?list-type=2&prefix={url_prefix}&delimiter=%2F&continuation-token=foo-continuation-token&encoding-type=url",
-        match_querystring=True,
-        body=f"""<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-    <Name>foo-bucket</Name>
-    <Prefix></Prefix>
-    <KeyCount>{len(contents)}</KeyCount>
-    <MaxKeys>{len(contents)}</MaxKeys>
-    <Delimiter>/</Delimiter>
-    <EncodingType>url</EncodingType>
-    <IsTruncated>false</IsTruncated>
-    {contents}
-    {commonprefixes}
-</ListBucketResult>""",
-    )
+        )
+
+    def assert_index_deleted(self, path):
+        delete_requests = [
+            request
+            for request in httpretty.latest_requests()
+            if request.method == "DELETE" and request.path == f"{path}index.html"
+        ]
+        assert len(delete_requests) == 1
+
+    def assert_index_created_correctly(
+        self, items, path, site_name="foo-bucket", title=None, root_index=False
+    ):
+        if not title:
+            title = path
+        regular_expressions = [
+            f"<title>Index of {re.escape(site_name)}{re.escape(title)}</title>",
+            f"<h1>Index of {re.escape(site_name)}{re.escape(title)}</h1>",
+            '<address style="font-size:small;">Generated by <a href="https://github.com/hmrc/bucket-dir">bucket-dir</a>.</address>',
+        ]
+        if not root_index:
+            regular_expressions.append(
+                '<tr>\n*\s*<td><a href="\.\.\/" class="parent_link">\.\.\/<\/a><\/td>\n*\s*<td><\/td>\n*\s*<td><\/td>\n*\s*<\/tr>'
+            )
+        for item in items:
+            encoded_name = item.get("encoded_name", item["name"])
+            regular_expressions.append(
+                f"<tr>\n*\s*<td><a href=\"{re.escape(encoded_name)}\" class=\"item_link\">{re.escape(item['name'])}<\/a><\/td>\n*\s*<td>{item['last_modified']}<\/td>\n*\s*<td>{item['size']}<\/td>\n*\s*<\/tr>"
+            )
+        put_requests = [
+            request
+            for request in self.received_put_requests
+            if request.method == "PUT" and request.path == f"{path}index.html"
+        ]
+        assert len(put_requests) == 1
+        captured_request = put_requests[0]
+        body = captured_request.body.decode()
+        for regular_expression in regular_expressions:
+            assert re.search(
+                regular_expression, body, flags=re.MULTILINE
+            ), f"{regular_expression} != {body}"
+        assert len(items) == body.count(
+            'class="item_link"'
+        ), f"number of items in index file did not match expected {body}"

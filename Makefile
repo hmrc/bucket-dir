@@ -21,7 +21,7 @@ profile:
 
 .PHONY: publish
 publish: build
-	@echo publish step skipped see PBD-4265
+	@poetry publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD}
 
 .PHONY: test
 test: init black

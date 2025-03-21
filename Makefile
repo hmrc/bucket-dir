@@ -21,7 +21,9 @@ profile:
 
 .PHONY: publish
 publish: build
-	@poetry publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD} --repository artifactory
+	@poetry config repositories.upload "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/"
+	@poetry config http-basic.upload ${PYPI_USERNAME} ${PYPI_PASSWORD}
+	@poetry publish --repository upload
 
 .PHONY: test
 test: init black

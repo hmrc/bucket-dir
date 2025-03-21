@@ -21,7 +21,7 @@ profile:
 
 .PHONY: publish
 publish: build
-	@poetry publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD}
+	@poetry publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD} --repository artifactory
 
 .PHONY: test
 test: init black
